@@ -12,6 +12,8 @@ module.exports = {
         background: "rgb(var(--color-background) / <alpha-value>)",
         surface: "rgb(var(--color-surface) / <alpha-value>)",
         border: "rgb(var(--color-border) / <alpha-value>)",
+        income: "rgb(var(--color-income) / <alpha-value>)",
+        expense: "rgb(var(--color-expense) / <alpha-value>)",
       },
       fontFamily: {
         sans: ["Inter_400Regular"],

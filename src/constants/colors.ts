@@ -9,4 +9,6 @@ export const colors = {
   background: "#FFFFFF",
   surface: "#F7F7FA",
   border: "#E6E6EB",
+  income: "#22C55E",
+  expense: "#EF4444",
 } as const;

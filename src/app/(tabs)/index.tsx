@@ -1,9 +1,27 @@
-import { View, Text } from "react-native";
+import { ScrollView } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { HomeHeader } from "@/components/home/HomeHeader";
+import { BalanceCard } from "@/components/home/BalanceCard";
+import { WalletSection } from "@/components/home/WalletSection";
+import { BudgetSection } from "@/components/home/BudgetSection";
+import { UpcomingCosts } from "@/components/home/UpcomingCosts";
+import { DebtSection } from "@/components/home/DebtSection";
 
 export default function HomeScreen() {
+  const insets = useSafeAreaInsets();
+
   return (
-    <View className="flex-1 items-center justify-center bg-background">
-      <Text className="text-lg font-sans-semibold text-foreground">Home</Text>
-    </View>
+    <ScrollView
+      className="flex-1 bg-background"
+      contentContainerStyle={{ paddingTop: insets.top, paddingBottom: 100 }}
+      showsVerticalScrollIndicator={false}
+    >
+      <HomeHeader />
+      <BalanceCard />
+      <WalletSection />
+      <BudgetSection />
+      <UpcomingCosts />
+      <DebtSection />
+    </ScrollView>
   );
 }
