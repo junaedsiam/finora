@@ -25,10 +25,10 @@ export function BalanceCard() {
           className="flex-row items-center rounded-full px-4 py-1.5"
           style={{ backgroundColor: "rgba(255,255,255,0.2)" }}
         >
-          <Text className="text-sm font-sans-medium text-white mr-1">
+          <Text className="text-base font-sans-medium text-white mr-1">
             Main Account
           </Text>
-          <Feather name="chevron-down" size={14} color="#FFFFFF" />
+          <Feather name="chevron-down" size={16} color="#FFFFFF" />
         </Pressable>
         <Pressable hitSlop={8}>
           <Feather name="more-vertical" size={20} color="#FFFFFF" />
@@ -37,7 +37,7 @@ export function BalanceCard() {
 
       {/* Total Balance */}
       <Text
-        className="text-sm font-sans text-white mb-1"
+        className="text-base font-sans text-white mb-1"
         style={{ opacity: 0.7 }}
       >
         Total Balance
@@ -66,12 +66,12 @@ export function BalanceCard() {
         <View>
           <View className="flex-row items-center gap-1 mb-1">
             <Text
-              className="text-sm font-sans text-white"
+              className="text-base font-sans text-white"
               style={{ opacity: 0.7 }}
             >
               Income
             </Text>
-            <Feather name="arrow-up-right" size={14} color="#4ADE80" />
+            <Feather name="arrow-up-right" size={16} color="#4ADE80" />
           </View>
           <Text className="text-lg font-sans-semibold text-white">
             {visible ? formatCurrency(income) : "••••"}
@@ -80,12 +80,12 @@ export function BalanceCard() {
         <View>
           <View className="flex-row items-center gap-1 mb-1">
             <Text
-              className="text-sm font-sans text-white"
+              className="text-base font-sans text-white"
               style={{ opacity: 0.7 }}
             >
               Expense
             </Text>
-            <Feather name="arrow-down-right" size={14} color="#FF6B6B" />
+            <Feather name="arrow-down-right" size={16} color="#FF6B6B" />
           </View>
           <Text className="text-lg font-sans-semibold text-white">
             {visible ? formatCurrency(expense) : "••••"}

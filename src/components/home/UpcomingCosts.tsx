@@ -47,10 +47,10 @@ export function UpcomingCosts() {
               size={44}
             />
             <View className="flex-1 ml-3">
-              <Text className="text-sm font-sans-semibold text-foreground">
+              <Text className="text-base font-sans-semibold text-foreground">
                 {item.name}
               </Text>
-              <Text className="text-xs font-sans text-muted mt-0.5">
+              <Text className="text-sm font-sans text-muted mt-0.5">
                 {item.dueLabel}
               </Text>
             </View>
@@ -63,13 +63,13 @@ export function UpcomingCosts() {
                   hitSlop={6}
                   className="rounded-full p-1.5 border border-border"
                 >
-                  <Feather name="edit-2" size={14} color={colors.muted} />
+                  <Feather name="edit-2" size={16} color={colors.muted} />
                 </Pressable>
                 <Pressable
                   hitSlop={6}
                   className="rounded-full p-1.5 border border-border"
                 >
-                  <Feather name="x" size={14} color={colors.expense} />
+                  <Feather name="x" size={16} color={colors.expense} />
                 </Pressable>
               </View>
             </View>

@@ -50,8 +50,8 @@ export function DebtSection() {
       <View className="flex-row gap-3 mb-3">
         <View className="flex-1 rounded-2xl p-4 border border-border bg-background items-center">
           <View className="flex-row items-center gap-1.5 mb-1">
-            <Feather name="arrow-down-left" size={14} color={colors.expense} />
-            <Text className="text-xs font-sans-medium text-muted">
+            <Feather name="arrow-down-left" size={16} color={colors.expense} />
+            <Text className="text-sm font-sans-medium text-muted">
               You Owe
             </Text>
           </View>
@@ -61,8 +61,8 @@ export function DebtSection() {
         </View>
         <View className="flex-1 rounded-2xl p-4 border border-border bg-background items-center">
           <View className="flex-row items-center gap-1.5 mb-1">
-            <Feather name="arrow-up-right" size={14} color={colors.income} />
-            <Text className="text-xs font-sans-medium text-muted">
+            <Feather name="arrow-up-right" size={16} color={colors.income} />
+            <Text className="text-sm font-sans-medium text-muted">
               You're Owed
             </Text>
           </View>

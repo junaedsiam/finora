@@ -36,10 +36,10 @@ export function DebtCard({
           size={40}
         />
         <View className="flex-1 ml-3">
-          <Text className="text-sm font-sans-semibold text-foreground">
+          <Text className="text-base font-sans-semibold text-foreground">
             {person}
           </Text>
-          <Text className="text-xs font-sans text-muted mt-0.5">
+          <Text className="text-sm font-sans text-muted mt-0.5">
             Due {dueDate}
           </Text>
         </View>
@@ -48,7 +48,7 @@ export function DebtCard({
           style={{ backgroundColor: isBorrowed ? "#FEE2E2" : "#DCFCE7" }}
         >
           <Text
-            className="text-[10px] font-sans-bold uppercase"
+            className="text-xs font-sans-bold uppercase"
             style={{ color: accentColor }}
           >
             {type}
@@ -63,11 +63,11 @@ export function DebtCard({
 
       {/* Bottom row: amounts + action */}
       <View className="flex-row items-center justify-between mt-2">
-        <Text className="text-xs font-sans text-muted">
+        <Text className="text-sm font-sans text-muted">
           Paid: {formatCurrency(paid)} / {formatCurrency(totalAmount)}
         </Text>
         <Text
-          className="text-xs font-sans-bold"
+          className="text-sm font-sans-bold"
           style={{ color: accentColor }}
         >
           {percentage}%
@@ -77,7 +77,7 @@ export function DebtCard({
       {/* Remaining + Record Payment */}
       <View className="flex-row items-center justify-between mt-3 pt-3 border-t border-border">
         <View>
-          <Text className="text-xs font-sans text-muted">Remaining</Text>
+          <Text className="text-sm font-sans text-muted">Remaining</Text>
           <Text
             className="text-base font-sans-bold"
             style={{ color: accentColor }}
@@ -91,11 +91,11 @@ export function DebtCard({
         >
           <Feather
             name={isBorrowed ? "dollar-sign" : "bell"}
-            size={14}
+            size={16}
             color={accentColor}
           />
           <Text
-            className="text-xs font-sans-semibold"
+            className="text-sm font-sans-semibold"
             style={{ color: accentColor }}
           >
             {isBorrowed ? "Record Payment" : "Remind"}

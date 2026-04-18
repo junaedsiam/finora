@@ -28,7 +28,7 @@ export function WalletCard({ name, balance, color, icon }: WalletCardProps) {
         />
         <View className="flex-1 ml-3">
           <Text
-            className="text-sm font-sans-medium"
+            className="text-base font-sans-medium"
             style={{ color: "rgba(0,0,0,0.6)" }}
             numberOfLines={1}
           >

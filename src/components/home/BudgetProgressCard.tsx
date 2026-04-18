@@ -24,10 +24,10 @@ export function BudgetProgressCard({
       </Text>
       <ProgressBar value={spent} max={total} color={color} />
       <View className="flex-row items-center justify-between mt-2">
-        <Text className="text-sm font-sans text-muted">
+        <Text className="text-base font-sans text-muted">
           Spent: {formatCurrency(spent)} / {formatCurrency(total)}
         </Text>
-        <Text className="text-sm font-sans-bold" style={{ color }}>
+        <Text className="text-base font-sans-bold" style={{ color }}>
           {percentage}%
         </Text>
       </View>
