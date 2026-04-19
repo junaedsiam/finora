@@ -1,7 +1,8 @@
 import { Stack } from "expo-router";
-import { colors } from "@/constants/colors";
+import { useColors } from "@/constants/colors";
 
 export default function ModalLayout() {
+  const colors = useColors();
   return (
     <Stack
       screenOptions={{

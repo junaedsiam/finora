@@ -5,7 +5,7 @@ import { router, useLocalSearchParams } from "expo-router";
 import Feather from "@expo/vector-icons/Feather";
 import { IconCircle } from "@/components/ui/IconCircle";
 import { Button } from "@/components/ui/Button";
-import { colors } from "@/constants/colors";
+import { useColors } from "@/constants/colors";
 import { walletColors } from "@/constants/wallet-colors";
 
 export default function EditWalletScreen() {
@@ -19,6 +19,7 @@ export default function EditWalletScreen() {
     is_excluded?: string;
   }>();
 
+  const colors = useColors();
   const isEditing = !!params.id;
   const [name, setName] = useState(params.name ?? "");
   const [balance, setBalance] = useState(params.balance ?? "");

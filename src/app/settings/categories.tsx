@@ -10,7 +10,7 @@ import DraggableFlatList, {
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { IconCircle } from "@/components/ui/IconCircle";
 import { TabPill } from "@/components/ui/TabPill";
-import { colors } from "@/constants/colors";
+import { useColors } from "@/constants/colors";
 
 type Category = {
   id: number;
@@ -48,6 +48,7 @@ function CategoryItem({
   drag: () => void;
   isActive: boolean;
 }) {
+  const colors = useColors();
   return (
     <ScaleDecorator>
       <View
@@ -97,6 +98,7 @@ const TAB_OPTIONS = ["Income", "Expense"];
 
 export default function CategoriesScreen() {
   const insets = useSafeAreaInsets();
+  const colors = useColors();
   const [activeTab, setActiveTab] = useState(0);
   const [incomeCategories, setIncomeCategories] = useState(MOCK_INCOME);
   const [expenseCategories, setExpenseCategories] = useState(MOCK_EXPENSE);
@@ -110,7 +112,7 @@ export default function CategoriesScreen() {
   );
 
   return (
-    <GestureHandlerRootView className="flex-1 bg-background" style={{ paddingTop: insets.top }}>
+    <GestureHandlerRootView style={{ flex: 1, paddingTop: insets.top, backgroundColor: colors.background }}>
       {/* Header */}
       <View className="flex-row items-center justify-between px-5 pt-2 pb-4">
         <View className="flex-row items-center gap-3">
@@ -149,6 +151,8 @@ export default function CategoriesScreen() {
         keyExtractor={(item) => item.id.toString()}
         onDragEnd={({ data }) => setCurrentData(data)}
         renderItem={renderItem}
+        style={{ flex: 1, backgroundColor: colors.background }}
+        containerStyle={{ flex: 1, backgroundColor: colors.background }}
         contentContainerStyle={{
           paddingHorizontal: 16,
           paddingBottom: insets.bottom + 24,

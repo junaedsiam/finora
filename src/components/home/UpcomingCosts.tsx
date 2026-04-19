@@ -1,6 +1,7 @@
 import { View, Text, Pressable } from "react-native";
+import { useRouter } from "expo-router";
 import Feather from "@expo/vector-icons/Feather";
-import { colors } from "@/constants/colors";
+import { useColors } from "@/constants/colors";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { IconCircle } from "@/components/ui/IconCircle";
 import { formatCurrency } from "@/utils/currency";
@@ -31,9 +32,16 @@ const MOCK_UPCOMING: UpcomingItem[] = [
 ];
 
 export function UpcomingCosts() {
+  const router = useRouter();
+  const colors = useColors();
+
   return (
     <View className="px-5 mt-6">
-      <SectionHeader title="Upcoming Costs" actionLabel="Manage Recurring >" />
+      <SectionHeader
+        title="Upcoming Costs"
+        actionLabel="Manage Recurring >"
+        onAction={() => router.push("/recurring")}
+      />
       <View className="gap-3">
         {MOCK_UPCOMING.map((item) => (
           <View

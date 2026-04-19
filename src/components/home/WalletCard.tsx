@@ -34,7 +34,10 @@ export function WalletCard({ name, balance, color, icon }: WalletCardProps) {
           >
             {name}
           </Text>
-          <Text className="text-lg font-sans-bold text-foreground">
+          <Text
+            className="text-lg font-sans-bold"
+            style={{ color: "#222222" }}
+          >
             {visible ? formatCurrency(balance, { decimals: false }) : "••••"}
           </Text>
         </View>

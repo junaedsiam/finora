@@ -2,7 +2,7 @@ import { View, Pressable } from "react-native";
 import Feather from "@expo/vector-icons/Feather";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { WalletCard } from "./WalletCard";
-import { colors } from "@/constants/colors";
+import { useColors } from "@/constants/colors";
 
 const MOCK_WALLETS = [
   { name: "Cash", balance: 5543, color: "#86EFAC", icon: "dollar-sign" as const },
@@ -12,6 +12,7 @@ const MOCK_WALLETS = [
 ];
 
 export function WalletSection() {
+  const colors = useColors();
   return (
     <View className="px-5 mt-6">
       <SectionHeader title="Wallets" actionLabel="View All >" />

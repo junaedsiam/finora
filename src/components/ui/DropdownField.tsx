@@ -1,6 +1,6 @@
 import { View, Text, Pressable } from "react-native";
 import Feather from "@expo/vector-icons/Feather";
-import { colors } from "@/constants/colors";
+import { useColors } from "@/constants/colors";
 
 type DropdownFieldProps = {
   icon: React.ComponentProps<typeof Feather>["name"];
@@ -17,6 +17,7 @@ export function DropdownField({
   onPress,
   flex = true,
 }: DropdownFieldProps) {
+  const colors = useColors();
   return (
     <Pressable
       onPress={onPress}

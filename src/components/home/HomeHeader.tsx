@@ -1,7 +1,7 @@
 import { View, Text, Pressable } from "react-native";
 import { router } from "expo-router";
 import Feather from "@expo/vector-icons/Feather";
-import { colors } from "@/constants/colors";
+import { useColors } from "@/constants/colors";
 
 const AVATAR_COLORS = [
   "#3538F8", "#E5484D", "#30A46C", "#E38E1A",
@@ -15,6 +15,7 @@ function getAvatarColor(letter: string) {
 }
 
 export function HomeHeader() {
+  const colors = useColors();
   const name = "Evelyn";
   const initial = name.charAt(0).toUpperCase();
   const avatarColor = getAvatarColor(initial);

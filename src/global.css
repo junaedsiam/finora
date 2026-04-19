@@ -14,3 +14,16 @@
     --color-expense: 239 68 68;
   }
 }
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-primary: 99 102 241;
+    --color-foreground: 241 241 244;
+    --color-muted: 152 152 166;
+    --color-background: 18 18 24;
+    --color-surface: 28 28 36;
+    --color-border: 44 44 56;
+    --color-income: 52 211 153;
+    --color-expense: 248 113 113;
+  }
+}

@@ -9,7 +9,7 @@ import DraggableFlatList, {
 } from "react-native-draggable-flatlist";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { IconCircle } from "@/components/ui/IconCircle";
-import { colors } from "@/constants/colors";
+import { useColors } from "@/constants/colors";
 
 type Wallet = {
   id: number;
@@ -36,6 +36,7 @@ function WalletItem({
   drag: () => void;
   isActive: boolean;
 }) {
+  const colors = useColors();
   return (
     <ScaleDecorator>
       <View
@@ -87,6 +88,7 @@ function WalletItem({
 
 export default function WalletsScreen() {
   const insets = useSafeAreaInsets();
+  const colors = useColors();
   const [wallets, setWallets] = useState(INITIAL_WALLETS);
 
   const renderItem = ({ item, drag, isActive }: RenderItemParams<Wallet>) => (
@@ -94,7 +96,7 @@ export default function WalletsScreen() {
   );
 
   return (
-    <GestureHandlerRootView className="flex-1 bg-background" style={{ paddingTop: insets.top }}>
+    <GestureHandlerRootView style={{ flex: 1, paddingTop: insets.top, backgroundColor: colors.background }}>
       <View className="flex-row items-center justify-between px-5 pt-2 pb-4">
         <View className="flex-row items-center gap-3">
           <Pressable
@@ -120,6 +122,8 @@ export default function WalletsScreen() {
         keyExtractor={(item) => item.id.toString()}
         onDragEnd={({ data }) => setWallets(data)}
         renderItem={renderItem}
+        style={{ flex: 1, backgroundColor: colors.background }}
+        containerStyle={{ flex: 1, backgroundColor: colors.background }}
         contentContainerStyle={{
           paddingHorizontal: 16,
           paddingBottom: insets.bottom + 24,

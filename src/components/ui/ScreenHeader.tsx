@@ -1,7 +1,7 @@
 import { View, Text, Pressable } from "react-native";
 import { router } from "expo-router";
 import Feather from "@expo/vector-icons/Feather";
-import { colors } from "@/constants/colors";
+import { useColors } from "@/constants/colors";
 
 type ScreenHeaderProps = {
   title: string;
@@ -14,6 +14,7 @@ export function ScreenHeader({
   showBack = false,
   showSettings = true,
 }: ScreenHeaderProps) {
+  const colors = useColors();
   return (
     <View className="flex-row items-center justify-between px-5 pt-2 pb-4">
       <View className="flex-row items-center gap-3">

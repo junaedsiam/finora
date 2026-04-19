@@ -3,7 +3,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
 import Feather from "@expo/vector-icons/Feather";
-import { colors } from "@/constants/colors";
+import { useColors } from "@/constants/colors";
 import { currencies } from "@/constants/currencies";
 import { Button } from "@/components/ui/Button";
 
@@ -15,6 +15,7 @@ export default function EditAccountScreen() {
     currency?: string;
   }>();
 
+  const colors = useColors();
   const isEditing = !!params.id;
   const [name, setName] = useState(params.name ?? "");
   const [currencyCode, setCurrencyCode] = useState(params.currency ?? "USD");

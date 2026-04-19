@@ -1,9 +1,9 @@
 import { View, Text } from "react-native";
+import { useRouter } from "expo-router";
 import Feather from "@expo/vector-icons/Feather";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { DebtCard } from "./DebtCard";
 import { formatCurrency } from "@/utils/currency";
-import { colors } from "@/constants/colors";
 
 const MOCK_DEBTS = [
   {
@@ -33,6 +33,7 @@ const MOCK_DEBTS = [
 ];
 
 export function DebtSection() {
+  const router = useRouter();
   const totalOwed = MOCK_DEBTS.filter((d) => d.type === "borrowed").reduce(
     (sum, d) => sum + d.remainingAmount,
     0,
@@ -44,10 +45,10 @@ export function DebtSection() {
 
   return (
     <View className="px-5 mt-6">
-      <SectionHeader title="Debts" actionLabel="View All >" />
+      <SectionHeader title="Debts" actionLabel="View All >" onAction={() => router.push("/debt")} />
 
       {/* Summary card */}
-      <View className="flex-row gap-3 mb-3">
+      {/* <View className="flex-row gap-3 mb-3">
         <View className="flex-1 rounded-2xl p-4 border border-border bg-background items-center">
           <View className="flex-row items-center gap-1.5 mb-1">
             <Feather name="arrow-down-left" size={16} color={colors.expense} />
@@ -70,7 +71,7 @@ export function DebtSection() {
             {formatCurrency(totalLent)}
           </Text>
         </View>
-      </View>
+      </View> */}
 
       {/* Individual debt cards */}
       <View className="gap-3">

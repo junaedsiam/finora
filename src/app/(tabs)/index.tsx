@@ -19,8 +19,8 @@ export default function HomeScreen() {
       <HomeHeader />
       <BalanceCard />
       <WalletSection />
-      <BudgetSection />
       <UpcomingCosts />
+      <BudgetSection />
       <DebtSection />
     </ScrollView>
   );

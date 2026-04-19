@@ -3,7 +3,7 @@ import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Feather from "@expo/vector-icons/Feather";
 import type { PickerItem } from "@/stores/transaction-form.store";
-import { colors } from "@/constants/colors";
+import { useColors } from "@/constants/colors";
 
 type SelectionListProps = {
   title: string;
@@ -19,24 +19,21 @@ export function SelectionList({
   onSelect,
 }: SelectionListProps) {
   const router = useRouter();
+  const colors = useColors();
   const insets = useSafeAreaInsets();
 
   return (
     <View className="flex-1 bg-background" style={{ paddingTop: insets.top }}>
       {/* Header */}
-      <View className="flex-row items-center px-4 py-3 border-b border-border">
+      <View className="flex-row items-center px-5 pt-2 pb-4 gap-3">
         <Pressable
           onPress={() => router.back()}
           hitSlop={8}
-          className="h-9 w-9 items-center justify-center"
-          style={({ pressed }) => ({ opacity: pressed ? 0.5 : 1 })}
+          className="active:opacity-70"
         >
-          <Feather name="arrow-left" size={22} color={colors.foreground} />
+          <Feather name="arrow-left" size={24} color={colors.foreground} />
         </Pressable>
-        <Text
-          className="flex-1 text-xl text-foreground ml-2"
-          style={{ fontFamily: "Inter_600SemiBold" }}
-        >
+        <Text className="flex-1 text-xl font-sans-bold text-foreground">
           {title}
         </Text>
       </View>

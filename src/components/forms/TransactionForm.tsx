@@ -7,7 +7,7 @@ import { TabPill } from "@/components/ui/TabPill";
 import { DropdownField } from "@/components/ui/DropdownField";
 import { Button } from "@/components/ui/Button";
 import { useTransactionFormStore } from "@/stores/transaction-form.store";
-import { colors } from "@/constants/colors";
+import { useColors } from "@/constants/colors";
 
 const TABS = ["Income", "Expense", "Transfer"];
 
@@ -20,6 +20,7 @@ function formatDate(d: Date): string {
 
 export function TransactionForm() {
   const router = useRouter();
+  const colors = useColors();
   const { category, fromWallet, toWallet } = useTransactionFormStore();
 
   const [activeTab, setActiveTab] = useState(1);

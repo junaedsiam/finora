@@ -8,7 +8,7 @@ import DraggableFlatList, {
   RenderItemParams,
 } from "react-native-draggable-flatlist";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-import { colors } from "@/constants/colors";
+import { useColors } from "@/constants/colors";
 
 type Account = {
   id: number;
@@ -32,6 +32,7 @@ function AccountItem({
   drag: () => void;
   isActive: boolean;
 }) {
+  const colors = useColors();
   return (
     <ScaleDecorator>
       <View
@@ -72,6 +73,7 @@ function AccountItem({
 
 export default function AccountsScreen() {
   const insets = useSafeAreaInsets();
+  const colors = useColors();
   const [accounts, setAccounts] = useState(INITIAL_ACCOUNTS);
 
   const renderItem = ({ item, drag, isActive }: RenderItemParams<Account>) => (
@@ -79,7 +81,7 @@ export default function AccountsScreen() {
   );
 
   return (
-    <GestureHandlerRootView className="flex-1 bg-background" style={{ paddingTop: insets.top }}>
+    <GestureHandlerRootView style={{ flex: 1, paddingTop: insets.top, backgroundColor: colors.background }}>
       {/* Header */}
       <View className="flex-row items-center justify-between px-5 pt-2 pb-4">
         <View className="flex-row items-center gap-3">
@@ -108,6 +110,8 @@ export default function AccountsScreen() {
         keyExtractor={(item) => item.id.toString()}
         onDragEnd={({ data }) => setAccounts(data)}
         renderItem={renderItem}
+        style={{ flex: 1, backgroundColor: colors.background }}
+        containerStyle={{ flex: 1, backgroundColor: colors.background }}
         contentContainerStyle={{
           paddingHorizontal: 16,
           paddingBottom: insets.bottom + 24,

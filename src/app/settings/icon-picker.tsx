@@ -2,11 +2,12 @@ import { View, Text, Pressable, FlatList } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router, useLocalSearchParams } from "expo-router";
 import Feather from "@expo/vector-icons/Feather";
-import { colors } from "@/constants/colors";
+import { useColors } from "@/constants/colors";
 import { walletIcons } from "@/constants/wallet-icons";
 
 export default function IconPickerScreen() {
   const insets = useSafeAreaInsets();
+  const colors = useColors();
   const params = useLocalSearchParams<{ selected?: string; color?: string }>();
   const activeColor = params.color ?? "#C1F0DB";
 

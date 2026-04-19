@@ -3,7 +3,7 @@ import Feather from "@expo/vector-icons/Feather";
 import { IconCircle } from "@/components/ui/IconCircle";
 import { ProgressBar } from "@/components/ui/ProgressBar";
 import { formatCurrency } from "@/utils/currency";
-import { colors } from "@/constants/colors";
+import { useColors } from "@/constants/colors";
 
 type DebtCardProps = {
   person: string;
@@ -11,6 +11,7 @@ type DebtCardProps = {
   totalAmount: number;
   remainingAmount: number;
   dueDate: string;
+  onPress?: () => void;
 };
 
 export function DebtCard({
@@ -19,14 +20,20 @@ export function DebtCard({
   totalAmount,
   remainingAmount,
   dueDate,
+  onPress,
 }: DebtCardProps) {
+  const colors = useColors();
   const isBorrowed = type === "borrowed";
   const paid = totalAmount - remainingAmount;
   const percentage = Math.round((paid / totalAmount) * 100);
   const accentColor = isBorrowed ? colors.expense : colors.income;
 
   return (
-    <View className="rounded-2xl p-4 border border-border bg-background">
+    <Pressable
+      onPress={onPress}
+      className="rounded-2xl p-4 border border-border bg-background"
+      style={({ pressed }) => (onPress ? { opacity: pressed ? 0.7 : 1 } : {})}
+    >
       {/* Top row: person + badge */}
       <View className="flex-row items-center mb-2">
         <IconCircle
@@ -63,11 +70,11 @@ export function DebtCard({
 
       {/* Bottom row: amounts + action */}
       <View className="flex-row items-center justify-between mt-2">
-        <Text className="text-sm font-sans text-muted">
+        <Text className="text-base font-sans text-muted">
           Paid: {formatCurrency(paid)} / {formatCurrency(totalAmount)}
         </Text>
         <Text
-          className="text-sm font-sans-bold"
+          className="text-base font-sans-bold"
           style={{ color: accentColor }}
         >
           {percentage}%
@@ -75,7 +82,7 @@ export function DebtCard({
       </View>
 
       {/* Remaining + Record Payment */}
-      <View className="flex-row items-center justify-between mt-3 pt-3 border-t border-border">
+      {/* <View className="flex-row items-center justify-between mt-3 pt-3 border-t border-border">
         <View>
           <Text className="text-sm font-sans text-muted">Remaining</Text>
           <Text
@@ -101,7 +108,7 @@ export function DebtCard({
             {isBorrowed ? "Record Payment" : "Remind"}
           </Text>
         </Pressable>
-      </View>
-    </View>
+      </View> */}
+    </Pressable>
   );
 }

@@ -3,7 +3,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
 import Feather from "@expo/vector-icons/Feather";
-import { colors } from "@/constants/colors";
+import { useColors } from "@/constants/colors";
 import { currencies, type Currency } from "@/constants/currencies";
 
 function CurrencyItem({
@@ -15,6 +15,7 @@ function CurrencyItem({
   isSelected: boolean;
   onPress: () => void;
 }) {
+  const colors = useColors();
   return (
     <Pressable
       onPress={onPress}
@@ -36,6 +37,7 @@ function CurrencyItem({
 
 export default function CurrencyPickerScreen() {
   const insets = useSafeAreaInsets();
+  const colors = useColors();
   const params = useLocalSearchParams<{ selected?: string }>();
   const [search, setSearch] = useState("");
   const [showSearch, setShowSearch] = useState(false);

@@ -3,7 +3,8 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import Feather from "@expo/vector-icons/Feather";
 import { ScreenHeader } from "@/components/ui/ScreenHeader";
-import { colors } from "@/constants/colors";
+import { useSettingsStore, STARTUP_SCREEN_OPTIONS } from "@/stores/settings.store";
+import { useColors } from "@/constants/colors";
 
 type SettingsItemProps = {
   icon: React.ComponentProps<typeof Feather>["name"];
@@ -13,6 +14,7 @@ type SettingsItemProps = {
 };
 
 function SettingsItem({ icon, label, value, onPress }: SettingsItemProps) {
+  const colors = useColors();
   return (
     <Pressable
       onPress={onPress}
@@ -46,6 +48,9 @@ function Divider() {
 
 export default function SettingsScreen() {
   const insets = useSafeAreaInsets();
+  const { startupScreen, theme } = useSettingsStore();
+  const startupLabel = STARTUP_SCREEN_OPTIONS.find((o) => o.id === startupScreen)?.label ?? "Home";
+  const themeLabel = theme === "system" ? "System Default" : theme === "light" ? "Light" : "Dark";
 
   return (
     <View className="flex-1 bg-background" style={{ paddingTop: insets.top }}>
@@ -70,17 +75,17 @@ export default function SettingsScreen() {
           <Divider />
           <SettingsItem icon="target" label="Budget" />
           <Divider />
-          <SettingsItem icon="trending-down" label="Debt" />
+          <SettingsItem icon="trending-down" label="Debt" onPress={() => router.push("/debt")} />
           <Divider />
-          <SettingsItem icon="repeat" label="Recurring" />
+          <SettingsItem icon="repeat" label="Recurring" onPress={() => router.push("/recurring")} />
         </View>
 
         {/* Configuration */}
         <SectionLabel title="Configuration" />
         <View className="bg-surface rounded-2xl px-4">
-          <SettingsItem icon="layout" label="Startup Screen" value="Home" />
+          <SettingsItem icon="layout" label="Startup Screen" value={startupLabel} onPress={() => router.push("/settings/startup-screen")} />
           <Divider />
-          <SettingsItem icon="moon" label="Theme" value="System Default" />
+          <SettingsItem icon="moon" label="Theme" value={themeLabel} onPress={() => router.push("/settings/theme")} />
           <Divider />
           <SettingsItem
             icon="dollar-sign"

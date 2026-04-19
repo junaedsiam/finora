@@ -5,7 +5,7 @@ import { router, useLocalSearchParams } from "expo-router";
 import Feather from "@expo/vector-icons/Feather";
 import { IconCircle } from "@/components/ui/IconCircle";
 import { Button } from "@/components/ui/Button";
-import { colors } from "@/constants/colors";
+import { useColors } from "@/constants/colors";
 import { categoryColors } from "@/constants/category-colors";
 
 export default function EditCategoryScreen() {
@@ -18,6 +18,7 @@ export default function EditCategoryScreen() {
     icon?: string;
   }>();
 
+  const colors = useColors();
   const isEditing = !!params.id;
   const categoryType = params.type ?? "expense";
   const typeLabel = categoryType === "income" ? "Income" : "Expense";

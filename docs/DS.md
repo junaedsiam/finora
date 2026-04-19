@@ -27,7 +27,7 @@
 - account_id: int
 - name: string
 - amount: float
-- period: enum (weekly / monthly / yearly)
+- period: enum (weekly / monthly / quaterly / yearly)
 - start_date: date
 - created_at: datetime
 - updated_at: datetime
@@ -49,6 +49,7 @@ Join table linking budgets to categories. Spending on linked categories is accum
 - note: string (nullable)
 - status: enum (confirmed / pending / skipped)
 - recurring_id: int (nullable)
+- debt_id: int (nullable)
 - created_at: datetime
 - updated_at: datetime
 

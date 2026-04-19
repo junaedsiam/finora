@@ -4,7 +4,7 @@ import type { BottomTabBarProps } from "@react-navigation/bottom-tabs";
 import Feather from "@expo/vector-icons/Feather";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
-import { colors } from "@/constants/colors";
+import { useColors } from "@/constants/colors";
 
 const TAB_CONFIG = [
   { name: "index", label: "Home", icon: "home" },
@@ -16,6 +16,7 @@ const TAB_CONFIG = [
 export function CustomTabBar({ state, navigation }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const colors = useColors();
   return (
     <View className="relative bg-background border-t border-border">
       {/* FAB — centered above the tab bar */}

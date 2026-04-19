@@ -12,6 +12,8 @@ export default function SettingsLayout() {
       <Stack.Screen name="icon-picker" />
       <Stack.Screen name="categories" />
       <Stack.Screen name="edit-category" />
+      <Stack.Screen name="startup-screen" />
+      <Stack.Screen name="theme" />
     </Stack>
   );
 }
