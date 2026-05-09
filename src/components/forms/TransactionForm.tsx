@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { View, Text, TextInput, Pressable } from "react-native";
+import { View, Text, TextInput, Pressable, Alert } from "react-native";
 import { useRouter } from "expo-router";
 import Feather from "@expo/vector-icons/Feather";
 import DatePicker from "react-native-date-picker";
@@ -7,7 +7,15 @@ import { TabPill } from "@/components/ui/TabPill";
 import { DropdownField } from "@/components/ui/DropdownField";
 import { Button } from "@/components/ui/Button";
 import { useTransactionFormStore } from "@/stores/transaction-form.store";
+import { useCreateTransaction } from "@/hooks/useTransactions";
+import { useWallets } from "@/hooks/useWallets";
+import { updateWalletBalance } from "@/repositories/wallet.repository";
+import { useActiveCurrency } from "@/hooks/useActiveCurrency";
+import { formatCurrency } from "@/utils/currency";
 import { useColors } from "@/constants/colors";
+import { currencies } from "@/constants/currencies";
+
+const currencySymbolMap = new Map(currencies.map((c) => [c.code, c.symbol]));
 
 const TABS = ["Income", "Expense", "Transfer"];
 
@@ -21,7 +29,11 @@ function formatDate(d: Date): string {
 export function TransactionForm() {
   const router = useRouter();
   const colors = useColors();
-  const { category, fromWallet, toWallet } = useTransactionFormStore();
+  const { category, fromWallet, toWallet, reset } = useTransactionFormStore();
+  const { data: wallets = [] } = useWallets();
+  const { mutateAsync: createTx } = useCreateTransaction();
+  const activeCurrency = useActiveCurrency();
+  const symbol = currencySymbolMap.get(activeCurrency) ?? activeCurrency;
 
   const [activeTab, setActiveTab] = useState(1);
   const [amount, setAmount] = useState("");
@@ -29,14 +41,80 @@ export function TransactionForm() {
   const [datePickerOpen, setDatePickerOpen] = useState(false);
   const [description, setDescription] = useState("");
   const [showDescription, setShowDescription] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const isTransfer = activeTab === 2;
   const currentType = activeTab === 0 ? "income" : "expense";
 
+  // Clear category when switching transaction type since categories differ by type
+  const handleTabChange = (index: number) => {
+    if (index !== activeTab) {
+      reset();
+    }
+    setActiveTab(index);
+  };
+
+  const handleSubmit = async () => {
+    const numAmount = parseFloat(amount);
+    if (isNaN(numAmount) || numAmount <= 0) {
+      Alert.alert("Error", "Please enter a valid amount");
+      return;
+    }
+    if (!category) {
+      Alert.alert("Error", "Please select a category");
+      return;
+    }
+    if (!fromWallet) {
+      Alert.alert("Error", "Please select a wallet");
+      return;
+    }
+    if (isTransfer && !toWallet) {
+      Alert.alert("Error", "Please select a destination wallet");
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const fromWalletId = parseInt(fromWallet.id);
+      const categoryId = parseInt(category.id);
+
+      await createTx({
+        walletId: fromWalletId,
+        destinationWalletId: isTransfer ? parseInt(toWallet!.id) : undefined,
+        categoryId,
+        type: currentType as "income" | "expense",
+        amount: numAmount,
+        note: description || null,
+        createdAt: date.toISOString(),
+      });
+
+      // Update wallet balances
+      const wallet = wallets.find((w) => w.id === fromWalletId);
+      if (wallet) {
+        const balanceChange = currentType === "income" ? numAmount : -numAmount;
+        await updateWalletBalance(fromWalletId, wallet.balance + balanceChange);
+      }
+
+      if (isTransfer && toWallet) {
+        const destWallet = wallets.find((w) => w.id === parseInt(toWallet!.id));
+        if (destWallet) {
+          await updateWalletBalance(parseInt(toWallet!.id), destWallet.balance + numAmount);
+        }
+      }
+
+      reset();
+      router.back();
+    } catch (err) {
+      Alert.alert("Error", "Failed to create transaction");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
     <View className="flex-1 bg-background rounded-t-3xl px-5 pt-6 pb-8">
       {/* Tab pills */}
-      <TabPill options={TABS} activeIndex={activeTab} onChange={setActiveTab} />
+      <TabPill options={TABS} activeIndex={activeTab} onChange={handleTabChange} />
 
       {/* Amount input */}
       <View className="items-center mt-8 mb-8">
@@ -48,7 +126,7 @@ export function TransactionForm() {
             className="text-5xl text-foreground"
             style={{ fontFamily: "Inter_700Bold", lineHeight: 60 }}
           >
-            ${" "}
+            {symbol}{" "}
           </Text>
           <TextInput
             value={amount}
@@ -132,7 +210,11 @@ export function TransactionForm() {
 
       {/* Submit button */}
       <View className="mt-auto pt-6">
-        <Button label="Add Transaction" />
+        <Button
+          label={isSubmitting ? "Saving..." : "Add Transaction"}
+          onPress={handleSubmit}
+          disabled={isSubmitting}
+        />
       </View>
 
       <DatePicker
