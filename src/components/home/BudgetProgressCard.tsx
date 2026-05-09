@@ -7,6 +7,7 @@ type BudgetProgressCardProps = {
   spent: number;
   total: number;
   color?: string;
+  currency?: string;
 };
 
 export function BudgetProgressCard({
@@ -14,6 +15,7 @@ export function BudgetProgressCard({
   spent,
   total,
   color = "#3538F8",
+  currency = "USD",
 }: BudgetProgressCardProps) {
   const percentage = Math.round((spent / total) * 100);
 
@@ -25,7 +27,7 @@ export function BudgetProgressCard({
       <ProgressBar value={spent} max={total} color={color} />
       <View className="flex-row items-center justify-between mt-2">
         <Text className="text-base font-sans text-muted">
-          Spent: {formatCurrency(spent)} / {formatCurrency(total)}
+          Spent: {formatCurrency(spent, { currency })} / {formatCurrency(total, { currency })}
         </Text>
         <Text className="text-base font-sans-bold" style={{ color }}>
           {percentage}%

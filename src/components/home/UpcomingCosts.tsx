@@ -14,6 +14,10 @@ type UpcomingItem = {
   iconBg: string;
 };
 
+type UpcomingCostsProps = {
+  currency?: string;
+};
+
 const MOCK_UPCOMING: UpcomingItem[] = [
   {
     name: "Internet Bill",
@@ -31,7 +35,7 @@ const MOCK_UPCOMING: UpcomingItem[] = [
   },
 ];
 
-export function UpcomingCosts() {
+export function UpcomingCosts({ currency = "USD" }: UpcomingCostsProps) {
   const router = useRouter();
   const colors = useColors();
 
@@ -64,7 +68,7 @@ export function UpcomingCosts() {
             </View>
             <View className="items-end gap-2">
               <Text className="text-base font-sans-semibold text-foreground">
-                {formatCurrency(item.amount)}
+                {formatCurrency(item.amount, { currency })}
               </Text>
               <View className="flex-row gap-3">
                 <Pressable

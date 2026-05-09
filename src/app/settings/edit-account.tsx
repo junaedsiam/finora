@@ -1,11 +1,13 @@
-import { View, Text, TextInput, Pressable } from "react-native";
+import { View, Text, TextInput, Pressable, Alert } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router, useLocalSearchParams } from "expo-router";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Feather from "@expo/vector-icons/Feather";
 import { useColors } from "@/constants/colors";
 import { currencies } from "@/constants/currencies";
 import { Button } from "@/components/ui/Button";
+import { useCreateAccount, useUpdateAccount } from "@/hooks/useAccount";
+import { useCurrencyPickerStore } from "@/stores/currency-picker.store";
 
 export default function EditAccountScreen() {
   const insets = useSafeAreaInsets();
@@ -14,13 +16,47 @@ export default function EditAccountScreen() {
     name?: string;
     currency?: string;
   }>();
+  const clearSelectedCode = () => useCurrencyPickerStore.getState().setSelectedCode(null);
 
   const colors = useColors();
   const isEditing = !!params.id;
   const [name, setName] = useState(params.name ?? "");
   const [currencyCode, setCurrencyCode] = useState(params.currency ?? "USD");
 
+  // Sync from store when returning from currency picker
+  const storeCode = useCurrencyPickerStore((s) => s.selectedCode);
+  useEffect(() => {
+    if (storeCode) {
+      setCurrencyCode(storeCode);
+      clearSelectedCode();
+    }
+  }, [storeCode]);
+
+  const createAccount = useCreateAccount();
+  const updateAccount = useUpdateAccount();
+
   const selectedCurrency = currencies.find((c) => c.code === currencyCode);
+  const isDisabled = name.trim().length === 0;
+
+  const handleSave = () => {
+    if (isEditing && params.id) {
+      updateAccount.mutate(
+        { id: Number(params.id), name: name.trim(), currency: currencyCode },
+        {
+          onSuccess: () => router.back(),
+          onError: () => Alert.alert("Error", "Failed to update account"),
+        }
+      );
+    } else {
+      createAccount.mutate(
+        { name: name.trim(), currency: currencyCode },
+        {
+          onSuccess: () => router.back(),
+          onError: () => Alert.alert("Error", "Failed to create account"),
+        }
+      );
+    }
+  };
 
   return (
     <View className="flex-1 bg-background" style={{ paddingTop: insets.top }}>
@@ -80,7 +116,8 @@ export default function EditAccountScreen() {
         <View className="mt-4">
           <Button
             label={isEditing ? "Save Changes" : "Create Account"}
-            disabled={name.trim().length === 0}
+            disabled={isDisabled || createAccount.isPending || updateAccount.isPending}
+            onPress={handleSave}
           />
         </View>
       </View>

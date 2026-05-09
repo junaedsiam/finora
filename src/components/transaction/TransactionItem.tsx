@@ -12,6 +12,7 @@ type TransactionItemProps = {
   time: string;
   icon: React.ComponentProps<typeof Feather>["name"];
   iconBg: string;
+  currency?: string;
   onPress?: () => void;
 };
 
@@ -23,6 +24,7 @@ export function TransactionItem({
   time,
   icon,
   iconBg,
+  currency = "USD",
   onPress,
 }: TransactionItemProps) {
   const colors = useColors();
@@ -52,7 +54,7 @@ export function TransactionItem({
           className="text-base"
           style={{ fontFamily: "Inter_600SemiBold", color: amountColor }}
         >
-          {prefix}{formatCurrency(Math.abs(amount))}
+          {prefix}{formatCurrency(Math.abs(amount), { currency })}
         </Text>
         <Text className="text-sm text-muted mt-0.5">{time}</Text>
       </View>

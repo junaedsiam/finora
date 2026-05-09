@@ -12,6 +12,7 @@ type DebtListItemProps = {
   totalAmount: number;
   remainingAmount: number;
   dueDate: string | null;
+  currency?: string;
   onPress?: () => void;
   onDelete?: () => void;
 };
@@ -22,6 +23,7 @@ export function DebtListItem({
   totalAmount,
   remainingAmount,
   dueDate,
+  currency = "USD",
   onPress,
   onDelete,
 }: DebtListItemProps) {
@@ -55,7 +57,7 @@ export function DebtListItem({
         </View>
         <View className="flex-row items-center justify-between mt-1">
           <Text className="text-sm text-muted">
-            {formatCurrency(paid)} / {formatCurrency(totalAmount)}
+            {formatCurrency(paid, { currency })} / {formatCurrency(totalAmount, { currency })}
           </Text>
           <Text
             className="text-sm"

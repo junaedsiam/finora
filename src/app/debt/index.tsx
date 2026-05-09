@@ -6,6 +6,7 @@ import Feather from "@expo/vector-icons/Feather";
 import { TabPill } from "@/components/ui/TabPill";
 import { DebtCard } from "@/components/home/DebtCard";
 import { formatCurrency } from "@/utils/currency";
+import { useActiveCurrency } from "@/hooks/useActiveCurrency";
 import { useColors } from "@/constants/colors";
 
 const TABS = ["I Borrowed", "I Lent"];
@@ -49,6 +50,7 @@ export default function DebtManagementScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const colors = useColors();
+  const currency = useActiveCurrency();
   const [activeTab, setActiveTab] = useState(0);
 
   const isBorrowed = activeTab === 0;
@@ -62,8 +64,8 @@ export default function DebtManagementScreen() {
   );
 
   const summaryLabel = isBorrowed
-    ? `Not yet paid ${formatCurrency(totalRemaining)}`
-    : `Not yet received ${formatCurrency(totalRemaining)}`;
+    ? `Not yet paid ${formatCurrency(totalRemaining, { currency })}`
+    : `Not yet received ${formatCurrency(totalRemaining, { currency })}`;
 
   return (
     <View className="flex-1 bg-background" style={{ paddingTop: insets.top }}>
@@ -128,6 +130,7 @@ export default function DebtManagementScreen() {
               totalAmount={debt.totalAmount}
               remainingAmount={debt.remainingAmount}
               dueDate={debt.dueDate}
+              currency={currency}
               onPress={() => router.push(`/debt/${debt.id}`)}
             />
           ))}

@@ -6,6 +6,7 @@ import { IconCircle } from "@/components/ui/IconCircle";
 import { TransactionItem } from "@/components/transaction/TransactionItem";
 import { TransactionDateGroup } from "@/components/transaction/TransactionDateGroup";
 import { formatCurrency } from "@/utils/currency";
+import { useActiveCurrency } from "@/hooks/useActiveCurrency";
 import { useColors } from "@/constants/colors";
 
 const MOCK_RECURRING: Record<
@@ -146,6 +147,7 @@ export default function RecurringDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
 
   const colors = useColors();
+  const currency = useActiveCurrency();
   const recurring = MOCK_RECURRING[id ?? "1"];
   if (!recurring) return null;
 
@@ -241,7 +243,7 @@ export default function RecurringDetailScreen() {
             className="text-3xl mt-4"
             style={{ fontFamily: "Inter_700Bold", color: accentColor }}
           >
-            {isIncome ? "+" : "-"}{formatCurrency(recurring.amount)}
+            {isIncome ? "+" : "-"}{formatCurrency(recurring.amount, { currency })}
           </Text>
         </View>
 

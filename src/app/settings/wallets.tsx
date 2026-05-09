@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { View, Text, Pressable } from "react-native";
+import { useCallback } from "react";
+import { View, Text, Pressable, Alert } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import Feather from "@expo/vector-icons/Feather";
@@ -10,45 +10,42 @@ import DraggableFlatList, {
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { IconCircle } from "@/components/ui/IconCircle";
 import { useColors } from "@/constants/colors";
-
-type Wallet = {
-  id: number;
-  name: string;
-  balance: number;
-  color: string;
-  icon: React.ComponentProps<typeof Feather>["name"];
-  is_excluded: boolean;
-};
-
-const INITIAL_WALLETS: Wallet[] = [
-  { id: 1, name: "Cash", balance: 2340.0, color: "#C1F0DB", icon: "dollar-sign", is_excluded: false },
-  { id: 2, name: "Bank Account", balance: 8750.5, color: "#BAE1FF", icon: "credit-card", is_excluded: false },
-  { id: 3, name: "Savings", balance: 15200.0, color: "#FFF3C4", icon: "lock", is_excluded: false },
-  { id: 4, name: "Investment", balance: 5400.25, color: "#D5C8F0", icon: "trending-up", is_excluded: true },
-];
+import { useWallets, useDeleteWallet, useUpdateWalletSortOrders } from "@/hooks/useWallets";
 
 function WalletItem({
   wallet,
   drag,
   isActive,
 }: {
-  wallet: Wallet;
+  wallet: { id: number; name: string; balance: number; color: string; icon: string; is_excluded: boolean };
   drag: () => void;
   isActive: boolean;
 }) {
   const colors = useColors();
+  const deleteWallet = useDeleteWallet();
+
   return (
     <ScaleDecorator>
       <View
         className="flex-row items-center py-3.5 px-4 bg-background"
-        style={isActive ? { shadowColor: "#000", shadowOpacity: 0.1, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 5 } : undefined}
+        style={
+          isActive
+            ? {
+                shadowColor: "#000",
+                shadowOpacity: 0.1,
+                shadowRadius: 8,
+                shadowOffset: { width: 0, height: 2 },
+                elevation: 5,
+              }
+            : undefined
+        }
       >
         <Pressable onLongPress={drag} delayLongPress={100} hitSlop={8} className="mr-3">
           <Feather name="menu" size={22} color={colors.muted} />
         </Pressable>
 
         <IconCircle
-          icon={wallet.icon}
+          icon={wallet.icon as React.ComponentProps<typeof Feather>["name"]}
           bgColor={wallet.color}
           iconColor="rgba(0,0,0,0.6)"
           size={42}
@@ -62,7 +59,7 @@ function WalletItem({
               params: {
                 id: wallet.id,
                 name: wallet.name,
-                balance: wallet.balance,
+                balance: String(wallet.balance),
                 color: wallet.color,
                 icon: wallet.icon,
                 is_excluded: wallet.is_excluded ? "1" : "0",
@@ -78,7 +75,24 @@ function WalletItem({
           </Text>
         </Pressable>
 
-        <Pressable hitSlop={8} className="active:opacity-70">
+        <Pressable
+          hitSlop={8}
+          className="active:opacity-70"
+          onPress={() => {
+            Alert.alert(
+              "Delete Wallet",
+              `Are you sure you want to delete "${wallet.name}"?`,
+              [
+                { text: "Cancel", style: "cancel" },
+                {
+                  text: "Delete",
+                  style: "destructive",
+                  onPress: () => deleteWallet.mutate(wallet.id),
+                },
+              ]
+            );
+          }}
+        >
           <Feather name="trash-2" size={20} color={colors.expense} />
         </Pressable>
       </View>
@@ -89,10 +103,24 @@ function WalletItem({
 export default function WalletsScreen() {
   const insets = useSafeAreaInsets();
   const colors = useColors();
-  const [wallets, setWallets] = useState(INITIAL_WALLETS);
+  const { data: wallets = [] } = useWallets();
+  const deleteWallet = useDeleteWallet();
+  const updateSortOrders = useUpdateWalletSortOrders();
 
-  const renderItem = ({ item, drag, isActive }: RenderItemParams<Wallet>) => (
+  const renderItem = ({ item, drag, isActive }: RenderItemParams<typeof wallets[number]>) => (
     <WalletItem wallet={item} drag={drag} isActive={isActive} />
+  );
+
+  const handleDragEnd = useCallback(
+    ({ data }: { data: typeof wallets }) => {
+      const orders = data.map((item, index) => ({
+        id: item.id,
+        sort_order: index,
+      }));
+      // Write to DB immediately — DraggableFlatList already has the reordered data from the drag
+      updateSortOrders.mutate(orders);
+    },
+    [updateSortOrders]
   );
 
   return (
@@ -120,17 +148,16 @@ export default function WalletsScreen() {
       <DraggableFlatList
         data={wallets}
         keyExtractor={(item) => item.id.toString()}
-        onDragEnd={({ data }) => setWallets(data)}
+        onDragEnd={handleDragEnd}
         renderItem={renderItem}
+        autoscrollThreshold={0}
         style={{ flex: 1, backgroundColor: colors.background }}
         containerStyle={{ flex: 1, backgroundColor: colors.background }}
         contentContainerStyle={{
           paddingHorizontal: 16,
           paddingBottom: insets.bottom + 24,
         }}
-        ItemSeparatorComponent={() => (
-          <View className="h-px bg-border mx-4" />
-        )}
+        ItemSeparatorComponent={() => <View className="h-px bg-border mx-4" />}
       />
     </GestureHandlerRootView>
   );

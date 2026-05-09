@@ -5,6 +5,7 @@ import { useState } from "react";
 import Feather from "@expo/vector-icons/Feather";
 import { useColors } from "@/constants/colors";
 import { currencies, type Currency } from "@/constants/currencies";
+import { useCurrencyPickerStore } from "@/stores/currency-picker.store";
 
 function CurrencyItem({
   currency,
@@ -41,6 +42,7 @@ export default function CurrencyPickerScreen() {
   const params = useLocalSearchParams<{ selected?: string }>();
   const [search, setSearch] = useState("");
   const [showSearch, setShowSearch] = useState(false);
+  const setSelectedCode = useCurrencyPickerStore((s) => s.setSelectedCode);
 
   const filtered = search.trim()
     ? currencies.filter(
@@ -50,6 +52,11 @@ export default function CurrencyPickerScreen() {
           c.symbol.includes(search)
       )
     : currencies;
+
+  const handleSelect = (code: string) => {
+    setSelectedCode(code);
+    router.back();
+  };
 
   return (
     <View className="flex-1 bg-background" style={{ paddingTop: insets.top }}>
@@ -98,7 +105,7 @@ export default function CurrencyPickerScreen() {
           <CurrencyItem
             currency={item}
             isSelected={item.code === params.selected}
-            onPress={() => router.back()}
+            onPress={() => handleSelect(item.code)}
           />
         )}
         ItemSeparatorComponent={() => (

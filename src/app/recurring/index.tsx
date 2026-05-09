@@ -6,6 +6,7 @@ import Feather from "@expo/vector-icons/Feather";
 import { TabPill } from "@/components/ui/TabPill";
 import { IconCircle } from "@/components/ui/IconCircle";
 import { formatCurrency } from "@/utils/currency";
+import { useActiveCurrency } from "@/hooks/useActiveCurrency";
 import { useColors } from "@/constants/colors";
 
 const TABS = ["Income", "Expense"];
@@ -99,6 +100,7 @@ export default function RecurringListScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const colors = useColors();
+  const currency = useActiveCurrency();
   const [activeTab, setActiveTab] = useState(0);
 
   const filtered = MOCK_RECURRING.filter((r) =>
@@ -184,7 +186,7 @@ export default function RecurringListScreen() {
                     color: isIncome ? colors.income : colors.expense,
                   }}
                 >
-                  {isIncome ? "+" : "-"}{formatCurrency(item.amount)}
+                  {isIncome ? "+" : "-"}{formatCurrency(item.amount, { currency })}
                 </Text>
               </Pressable>
             );

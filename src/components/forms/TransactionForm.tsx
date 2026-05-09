@@ -31,6 +31,7 @@ export function TransactionForm() {
   const [showDescription, setShowDescription] = useState(false);
 
   const isTransfer = activeTab === 2;
+  const currentType = activeTab === 0 ? "income" : "expense";
 
   return (
     <View className="flex-1 bg-background rounded-t-3xl px-5 pt-6 pb-8">
@@ -78,7 +79,7 @@ export function TransactionForm() {
           icon="align-left"
           label="Category"
           value={category?.name}
-          onPress={() => router.push("/(modals)/select-category")}
+          onPress={() => router.push({ pathname: "/(modals)/select-category", params: { type: currentType } })}
           flex={false}
         />
 

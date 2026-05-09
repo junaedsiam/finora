@@ -7,6 +7,7 @@ import { ProgressBar } from "@/components/ui/ProgressBar";
 import { TransactionItem } from "@/components/transaction/TransactionItem";
 import { TransactionDateGroup } from "@/components/transaction/TransactionDateGroup";
 import { formatCurrency } from "@/utils/currency";
+import { useActiveCurrency } from "@/hooks/useActiveCurrency";
 import { useColors } from "@/constants/colors";
 
 const MOCK_DEBTS: Record<string, {
@@ -87,6 +88,7 @@ export default function DebtDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
 
   const colors = useColors();
+  const currency = useActiveCurrency();
   const debt = MOCK_DEBTS[id ?? "1"];
   if (!debt) return null;
 
@@ -183,10 +185,10 @@ export default function DebtDetailScreen() {
           <ProgressBar value={paid} max={debt.totalAmount} color={accentColor} />
           <View className="flex-row items-center justify-between mt-2">
             <Text className="text-sm text-muted">
-              {formatCurrency(paid)} / {formatCurrency(debt.totalAmount)}
+              {formatCurrency(paid, { currency })} / {formatCurrency(debt.totalAmount, { currency })}
             </Text>
             <Text className="text-sm text-muted">
-              Remaining: {formatCurrency(debt.remainingAmount)}
+              Remaining: {formatCurrency(debt.remainingAmount, { currency })}
             </Text>
           </View>
         </View>
@@ -199,7 +201,7 @@ export default function DebtDetailScreen() {
               className="text-lg text-foreground mt-1"
               style={{ fontFamily: "Inter_700Bold" }}
             >
-              {formatCurrency(debt.totalAmount)}
+              {formatCurrency(debt.totalAmount, { currency })}
             </Text>
           </View>
           <View className="flex-1 rounded-2xl p-4 border border-border">

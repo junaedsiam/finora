@@ -4,19 +4,24 @@ import { router, useLocalSearchParams } from "expo-router";
 import Feather from "@expo/vector-icons/Feather";
 import { useColors } from "@/constants/colors";
 import { walletIcons } from "@/constants/wallet-icons";
+import { useIconPickerStore } from "@/stores/icon-picker.store";
 
 export default function IconPickerScreen() {
   const insets = useSafeAreaInsets();
   const colors = useColors();
   const params = useLocalSearchParams<{ selected?: string; color?: string }>();
   const activeColor = params.color ?? "#C1F0DB";
+  const setSelectedIcon = useIconPickerStore((s) => s.setSelectedIcon);
 
   const renderItem = ({ item }: { item: (typeof walletIcons)[number] }) => {
     const isSelected = item === params.selected;
 
     return (
       <Pressable
-        onPress={() => router.back()}
+        onPress={() => {
+          setSelectedIcon(item);
+          router.back();
+        }}
         className="flex-1 items-center justify-center py-4 active:opacity-70"
       >
         <View
@@ -28,7 +33,7 @@ export default function IconPickerScreen() {
           }}
         >
           <Feather
-            name={item}
+            name={item as React.ComponentProps<typeof Feather>["name"]}
             size={24}
             color={isSelected ? "rgba(0,0,0,0.6)" : colors.muted}
           />

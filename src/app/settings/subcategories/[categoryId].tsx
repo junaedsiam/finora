@@ -1,28 +1,28 @@
-import { useState } from "react";
 import { View, Text, Pressable, Alert } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import Feather from "@expo/vector-icons/Feather";
 import DraggableFlatList, {
   RenderItemParams,
 } from "react-native-draggable-flatlist";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-import { IconCircle } from "@/components/ui/IconCircle";
-import { TabPill } from "@/components/ui/TabPill";
-import { useColors } from "@/constants/colors";
 import type { CategoryRow } from "@/types/database";
-import { useCategoriesByType, useDeleteCategory, useReorderCategories } from "@/hooks/useCategories";
+import { useColors } from "@/constants/colors";
+import { useCategory } from "@/hooks/useCategories";
+import { useSubCategories, useDeleteSubCategory, useReorderSubCategories } from "@/hooks/useCategories";
 
-function CategoryItem({
+function SubCategoryItem({
   category,
   drag,
   isActive,
   onDelete,
+  onEdit,
 }: {
   category: CategoryRow;
   drag: () => void;
   isActive: boolean;
   onDelete: () => void;
+  onEdit: () => void;
 }) {
   const colors = useColors();
   return (
@@ -50,74 +50,62 @@ function CategoryItem({
         <Feather name="menu" size={22} color={colors.muted} />
       </Pressable>
 
-      <Pressable
-        className="flex-row flex-1 items-center ml-3 active:opacity-70"
-        onPress={() =>
-          router.push(`/settings/subcategories/${category.id}` as any)
-        }
-      >
-        <IconCircle
-          icon={category.icon as React.ComponentProps<typeof Feather>["name"]}
-          bgColor={category.color}
-          iconColor="rgba(0,0,0,0.55)"
-          size={42}
-        />
-        <Text className="ml-3 text-lg font-sans-semibold text-foreground">
+      <Pressable className="flex-1 ml-3" onPress={onEdit}>
+        <Text className="text-lg font-sans-semibold text-foreground">
           {category.name}
         </Text>
       </Pressable>
 
       <Pressable
-        onPress={() =>
-          router.push({
-            pathname: "/settings/edit-category",
-            params: {
-              id: category.id,
-              type: category.type,
-              name: category.name,
-              color: category.color,
-              icon: category.icon,
-            },
-          })
-        }
+        onPress={onEdit}
         hitSlop={8}
         className="mr-3 active:opacity-70"
       >
         <Feather name="edit-2" size={18} color={colors.muted} />
       </Pressable>
 
-      <Pressable onPress={onDelete} hitSlop={8} className="active:opacity-70">
+      <Pressable
+        onPress={onDelete}
+        hitSlop={8}
+        className="active:opacity-70"
+      >
         <Feather name="trash-2" size={20} color={colors.expense} />
       </Pressable>
     </View>
   );
 }
 
-const TAB_OPTIONS = ["Income", "Expense"];
-
-export default function CategoriesScreen() {
+export default function SubCategoriesScreen() {
   const insets = useSafeAreaInsets();
+  const params = useLocalSearchParams<{ categoryId: string }>();
   const colors = useColors();
-  const [activeTab, setActiveTab] = useState(0);
+  const categoryId = parseInt(params.categoryId ?? "0", 10);
 
-  const currentType = activeTab === 0 ? "income" : "expense";
-  const { data: categories = [], isLoading } = useCategoriesByType(currentType);
-  const deleteCategory = useDeleteCategory();
-  const reorderCategories = useReorderCategories();
+  const { data: parentCategory } = useCategory(categoryId);
+  const { data: subCategories = [] } = useSubCategories(categoryId);
+  const deleteSubCategory = useDeleteSubCategory();
+  const reorderSubCategories = useReorderSubCategories();
 
-  const handleDelete = (category: CategoryRow) => {
+  const handleDelete = (sub: CategoryRow) => {
     Alert.alert(
-      "Delete Category",
-      `Are you sure you want to delete "${category.name}"? This will also delete all sub-categories.`,
+      "Delete Sub-Category",
+      `Are you sure you want to delete "${sub.name}"?`,
       [
         { text: "Cancel", style: "cancel" },
         {
           text: "Delete",
           style: "destructive",
-          onPress: () => deleteCategory.mutate(category.id),
+          onPress: () => deleteSubCategory.mutate(sub.id),
         },
       ]
     );
+  };
+
+  const handleEdit = (sub: CategoryRow) => {
+    router.push({
+      pathname: "/settings/edit-subcategory",
+      params: { id: sub.id.toString(), parentId: categoryId.toString() },
+    } as any);
   };
 
   const handleDragEnd = ({ data }: { data: CategoryRow[] }) => {
@@ -125,15 +113,16 @@ export default function CategoriesScreen() {
       id: item.id,
       sort_order: index,
     }));
-    reorderCategories.mutate(sorted);
+    reorderSubCategories.mutate(sorted);
   };
 
   const renderItem = ({ item, drag, isActive }: RenderItemParams<CategoryRow>) => (
-    <CategoryItem
+    <SubCategoryItem
       category={item}
       drag={drag}
       isActive={isActive}
       onDelete={() => handleDelete(item)}
+      onEdit={() => handleEdit(item)}
     />
   );
 
@@ -156,7 +145,7 @@ export default function CategoriesScreen() {
             <Feather name="arrow-left" size={24} color={colors.foreground} />
           </Pressable>
           <Text className="text-xl font-sans-bold text-foreground">
-            Category
+            {parentCategory?.name ?? "Sub-Categories"}
           </Text>
         </View>
         <Pressable
@@ -164,41 +153,28 @@ export default function CategoriesScreen() {
           className="active:opacity-70"
           onPress={() =>
             router.push({
-              pathname: "/settings/edit-category",
-              params: { type: currentType },
-            })
+              pathname: "/settings/edit-subcategory",
+              params: { parentId: categoryId.toString() },
+            } as any)
           }
         >
           <Feather name="plus" size={24} color={colors.foreground} />
         </Pressable>
       </View>
 
-      {/* Tabs */}
-      <View className="px-5 mb-4">
-        <TabPill
-          options={TAB_OPTIONS}
-          activeIndex={activeTab}
-          onChange={setActiveTab}
-        />
-      </View>
-
-      {isLoading ? (
-        <View className="flex-1 items-center justify-center">
-          <Text className="text-muted">Loading...</Text>
-        </View>
-      ) : categories.length === 0 ? (
+      {subCategories.length === 0 ? (
         <View className="flex-1 items-center justify-center px-8">
           <Feather name="folder" size={48} color={colors.muted} />
           <Text className="text-muted mt-4 text-center font-sans-medium">
-            No {currentType} categories yet
+            No sub-categories yet
           </Text>
           <Text className="text-muted mt-1 text-center text-sm">
-            Tap + to add your first {currentType} category
+            Tap + to add your first sub-category
           </Text>
         </View>
       ) : (
         <DraggableFlatList
-          data={categories}
+          data={subCategories}
           keyExtractor={(item) => item.id.toString()}
           onDragEnd={handleDragEnd}
           renderItem={renderItem}

@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { View, Text, TextInput, Pressable, ScrollView, Switch } from "react-native";
+import { useState, useEffect } from "react";
+import { View, Text, TextInput, Pressable, ScrollView, Switch, Alert } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router, useLocalSearchParams } from "expo-router";
 import Feather from "@expo/vector-icons/Feather";
@@ -7,6 +7,8 @@ import { IconCircle } from "@/components/ui/IconCircle";
 import { Button } from "@/components/ui/Button";
 import { useColors } from "@/constants/colors";
 import { walletColors } from "@/constants/wallet-colors";
+import { useCreateWallet, useUpdateWallet } from "@/hooks/useWallets";
+import { useIconPickerStore } from "@/stores/icon-picker.store";
 
 export default function EditWalletScreen() {
   const insets = useSafeAreaInsets();
@@ -21,12 +23,62 @@ export default function EditWalletScreen() {
 
   const colors = useColors();
   const isEditing = !!params.id;
+  const createWallet = useCreateWallet();
+  const updateWallet = useUpdateWallet();
+  const storeIcon = useIconPickerStore((s) => s.selectedIcon);
+  const clearIcon = () => useIconPickerStore.getState().setSelectedIcon(null);
+
   const [name, setName] = useState(params.name ?? "");
   const [balance, setBalance] = useState(params.balance ?? "");
   const [selectedColor, setSelectedColor] = useState(params.color ?? walletColors[0].value);
   const [selectedIcon, setSelectedIcon] = useState<string>(params.icon ?? "dollar-sign");
   const [isExcluded, setIsExcluded] = useState(params.is_excluded === "1");
   const [colorDropdownOpen, setColorDropdownOpen] = useState(false);
+
+  // Sync icon from store when returning from icon picker
+  useEffect(() => {
+    if (storeIcon) {
+      setSelectedIcon(storeIcon);
+      clearIcon();
+    }
+  }, [storeIcon]);
+
+  const isDisabled = name.trim().length === 0;
+
+  const handleSave = () => {
+    const balanceNum = parseFloat(balance) || 0;
+
+    if (isEditing && params.id) {
+      updateWallet.mutate(
+        {
+          id: Number(params.id),
+          name: name.trim(),
+          type: "cash",
+          color: selectedColor,
+          icon: selectedIcon,
+          is_excluded: isExcluded ? 1 : 0,
+        },
+        {
+          onSuccess: () => router.back(),
+          onError: () => Alert.alert("Error", "Failed to update wallet"),
+        }
+      );
+    } else {
+      createWallet.mutate(
+        {
+          name: name.trim(),
+          type: "cash",
+          balance: balanceNum,
+          color: selectedColor,
+          icon: selectedIcon,
+        },
+        {
+          onSuccess: () => router.back(),
+          onError: () => Alert.alert("Error", "Failed to create wallet"),
+        }
+      );
+    }
+  };
 
   return (
     <View className="flex-1 bg-background" style={{ paddingTop: insets.top }}>
@@ -77,20 +129,22 @@ export default function EditWalletScreen() {
             />
           </View>
 
-          {/* Balance */}
-          <View className="gap-2">
-            <Text className="text-sm font-sans-semibold text-muted uppercase tracking-wider">
-              Initial Balance
-            </Text>
-            <TextInput
-              value={balance}
-              onChangeText={setBalance}
-              placeholder="0.00"
-              placeholderTextColor={colors.muted}
-              keyboardType="decimal-pad"
-              className="rounded-xl border border-border px-4 py-3.5 text-base font-sans-medium text-foreground"
-            />
-          </View>
+          {/* Balance (only for new wallets) */}
+          {!isEditing && (
+            <View className="gap-2">
+              <Text className="text-sm font-sans-semibold text-muted uppercase tracking-wider">
+                Initial Balance
+              </Text>
+              <TextInput
+                value={balance}
+                onChangeText={setBalance}
+                placeholder="0.00"
+                placeholderTextColor={colors.muted}
+                keyboardType="decimal-pad"
+                className="rounded-xl border border-border px-4 py-3.5 text-base font-sans-medium text-foreground"
+              />
+            </View>
+          )}
 
           {/* Color */}
           <View className="gap-2">
@@ -195,7 +249,8 @@ export default function EditWalletScreen() {
           <View className="mt-2">
             <Button
               label={isEditing ? "Save Changes" : "Create Wallet"}
-              disabled={name.trim().length === 0}
+              disabled={isDisabled || createWallet.isPending || updateWallet.isPending}
+              onPress={handleSave}
             />
           </View>
         </View>

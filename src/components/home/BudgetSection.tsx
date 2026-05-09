@@ -1,6 +1,7 @@
 import { View } from "react-native";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { BudgetProgressCard } from "./BudgetProgressCard";
+import { useActiveCurrency } from "@/hooks/useActiveCurrency";
 
 const MOCK_BUDGETS = [
   { name: "Monthly Budget", spent: 1650, total: 2500, color: "#3538F8" },
@@ -8,12 +9,13 @@ const MOCK_BUDGETS = [
 ];
 
 export function BudgetSection() {
+  const currency = useActiveCurrency();
   return (
     <View className="px-5 mt-6">
       <SectionHeader title="Budgets" actionLabel="View All >" />
       <View className="gap-3">
         {MOCK_BUDGETS.map((budget) => (
-          <BudgetProgressCard key={budget.name} {...budget} />
+          <BudgetProgressCard key={budget.name} {...budget} currency={currency} />
         ))}
       </View>
     </View>

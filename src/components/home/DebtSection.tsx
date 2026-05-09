@@ -4,6 +4,7 @@ import Feather from "@expo/vector-icons/Feather";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { DebtCard } from "./DebtCard";
 import { formatCurrency } from "@/utils/currency";
+import { useActiveCurrency } from "@/hooks/useActiveCurrency";
 
 const MOCK_DEBTS = [
   {
@@ -34,6 +35,7 @@ const MOCK_DEBTS = [
 
 export function DebtSection() {
   const router = useRouter();
+  const currency = useActiveCurrency();
   const totalOwed = MOCK_DEBTS.filter((d) => d.type === "borrowed").reduce(
     (sum, d) => sum + d.remainingAmount,
     0,
@@ -76,7 +78,7 @@ export function DebtSection() {
       {/* Individual debt cards */}
       <View className="gap-3">
         {MOCK_DEBTS.map((debt) => (
-          <DebtCard key={debt.id} {...debt} />
+          <DebtCard key={debt.id} {...debt} currency={currency} />
         ))}
       </View>
     </View>

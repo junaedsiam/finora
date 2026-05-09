@@ -26,7 +26,6 @@ export default function ThemeSetting() {
 
   function handleSelect(id: ThemePreference) {
     setTheme(id);
-    router.back();
   }
 
   return (

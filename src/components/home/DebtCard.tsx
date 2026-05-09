@@ -11,6 +11,7 @@ type DebtCardProps = {
   totalAmount: number;
   remainingAmount: number;
   dueDate: string;
+  currency?: string;
   onPress?: () => void;
 };
 
@@ -20,6 +21,7 @@ export function DebtCard({
   totalAmount,
   remainingAmount,
   dueDate,
+  currency = "USD",
   onPress,
 }: DebtCardProps) {
   const colors = useColors();
@@ -71,7 +73,7 @@ export function DebtCard({
       {/* Bottom row: amounts + action */}
       <View className="flex-row items-center justify-between mt-2">
         <Text className="text-base font-sans text-muted">
-          Paid: {formatCurrency(paid)} / {formatCurrency(totalAmount)}
+          Paid: {formatCurrency(paid, { currency })} / {formatCurrency(totalAmount, { currency })}
         </Text>
         <Text
           className="text-base font-sans-bold"
