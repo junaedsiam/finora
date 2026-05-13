@@ -125,7 +125,7 @@ export default function EditWalletScreen() {
               onChangeText={setName}
               placeholder="Wallet name"
               placeholderTextColor={colors.muted}
-              className="rounded-xl border border-border px-4 py-3.5 text-base font-sans-medium text-foreground"
+              className="rounded-xl border border-border px-4 py-4 text-base font-sans-medium text-foreground"
             />
           </View>
 
@@ -141,7 +141,7 @@ export default function EditWalletScreen() {
                 placeholder="0.00"
                 placeholderTextColor={colors.muted}
                 keyboardType="decimal-pad"
-                className="rounded-xl border border-border px-4 py-3.5 text-base font-sans-medium text-foreground"
+                className="rounded-xl border border-border px-4 py-4 text-base font-sans-medium text-foreground"
               />
             </View>
           )}
@@ -153,7 +153,7 @@ export default function EditWalletScreen() {
             </Text>
             <Pressable
               onPress={() => setColorDropdownOpen((v) => !v)}
-              className="flex-row items-center rounded-xl border border-border px-4 py-3.5 active:opacity-70"
+              className="flex-row items-center rounded-xl border border-border px-4 py-4 active:opacity-70"
             >
               <View
                 className="h-6 w-6 rounded-full mr-3"
@@ -208,7 +208,7 @@ export default function EditWalletScreen() {
                   params: { selected: selectedIcon, color: selectedColor },
                 })
               }
-              className="flex-row items-center rounded-xl border border-border px-4 py-3.5 active:opacity-70"
+              className="flex-row items-center rounded-xl border border-border px-4 py-4 active:opacity-70"
             >
               <View
                 className="h-8 w-8 rounded-lg items-center justify-center mr-3"
@@ -228,7 +228,7 @@ export default function EditWalletScreen() {
           </View>
 
           {/* Exclude Toggle */}
-          <View className="flex-row items-center justify-between rounded-xl border border-border px-4 py-3.5">
+          <View className="flex-row items-center justify-between rounded-xl border border-border px-4 py-4">
             <View className="flex-1 mr-3">
               <Text className="text-base font-sans-medium text-foreground">
                 Exclude from total

@@ -85,7 +85,7 @@ export default function EditAccountScreen() {
             onChangeText={setName}
             placeholder="Account name"
             placeholderTextColor={colors.muted}
-            className="rounded-xl border border-border px-4 py-3.5 text-base font-sans-medium text-foreground"
+            className="rounded-xl border border-border px-4 py-4 text-base font-sans-medium text-foreground"
           />
         </View>
 
@@ -101,7 +101,7 @@ export default function EditAccountScreen() {
                 params: { selected: currencyCode },
               })
             }
-            className="flex-row items-center rounded-xl border border-border px-4 py-3.5 active:opacity-70"
+            className="flex-row items-center rounded-xl border border-border px-4 py-4 active:opacity-70"
           >
             <Text className="flex-1 text-base font-sans-medium text-foreground">
               {selectedCurrency

@@ -21,7 +21,7 @@ export function DropdownField({
   return (
     <Pressable
       onPress={onPress}
-      className={`${flex ? "flex-1" : ""} flex-row items-center rounded-xl border border-border px-3 py-3`}
+      className={`${flex ? "flex-1" : ""} flex-row items-center rounded-xl border border-border px-3 py-4`}
     >
       <Feather name={icon} size={18} color={colors.muted} />
       <Text className="flex-1 text-base font-sans-medium text-foreground ml-2" numberOfLines={1}>

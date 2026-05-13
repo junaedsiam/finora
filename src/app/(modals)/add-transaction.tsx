@@ -1,4 +1,4 @@
-import { View, Pressable } from "react-native";
+import { View, Pressable, StyleSheet } from "react-native";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Feather from "@expo/vector-icons/Feather";
@@ -12,15 +12,23 @@ export default function AddTransactionModal() {
 
   return (
     <View
-      className="flex-1"
-      style={{ paddingTop: insets.top + 40, backgroundColor: colors.background }}
+      style={[
+        styles.container,
+        {
+          paddingTop: insets.top + 40,
+          backgroundColor: colors.background,
+        },
+      ]}
     >
       {/* Tap above form to dismiss + back button */}
-      <Pressable className="flex-row items-end px-4 pb-3" onPress={() => router.back()}>
+      <Pressable
+        className="flex-row items-end px-4 pb-3"
+        onPress={() => router.back()}
+      >
         <Pressable
           onPress={() => router.back()}
           hitSlop={8}
-          className="h-9 w-9 items-center justify-center rounded-full"
+          className="items-center justify-center rounded-full h-9 w-9"
           style={({ pressed }) => ({
             opacity: pressed ? 0.6 : 1,
             backgroundColor: colors.surface,
@@ -30,7 +38,18 @@ export default function AddTransactionModal() {
         </Pressable>
       </Pressable>
 
-      <TransactionForm />
+      <View style={styles.formContainer}>
+        <TransactionForm />
+      </View>
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  formContainer: {
+    flex: 1,
+  },
+});

@@ -71,7 +71,7 @@ export default function AddDebtScreen() {
           >
             {activeType === 0 ? "Lender Name" : "Borrower Name"}
           </Text>
-          <View className="flex-row items-center rounded-xl border border-border px-3 py-3">
+          <View className="flex-row items-center rounded-xl border border-border px-3 py-4">
             <Feather name="user" size={18} color={colors.muted} />
             <TextInput
               value={personName}
@@ -92,7 +92,7 @@ export default function AddDebtScreen() {
           >
             Amount
           </Text>
-          <View className="flex-row items-center rounded-xl border border-border px-3 py-3">
+          <View className="flex-row items-center rounded-xl border border-border px-3 py-4">
             <Feather name="dollar-sign" size={18} color={colors.muted} />
             <TextInput
               value={amount}
@@ -154,7 +154,7 @@ export default function AddDebtScreen() {
           >
             Note (optional)
           </Text>
-          <View className="flex-row items-center rounded-xl border border-border px-3 py-3">
+          <View className="flex-row items-center rounded-xl border border-border px-3 py-4">
             <Feather name="file-text" size={18} color={colors.muted} />
             <TextInput
               value={note}

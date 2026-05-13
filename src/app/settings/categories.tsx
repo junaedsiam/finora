@@ -80,10 +80,10 @@ function CategoryItem({
             },
           })
         }
-        hitSlop={8}
-        className="mr-3 active:opacity-70"
+        hitSlop={10}
+        className="mr-4 active:opacity-70"
       >
-        <Feather name="edit-2" size={18} color={colors.muted} />
+        <Feather name="edit-2" size={20} color={colors.muted} />
       </Pressable>
 
       <Pressable onPress={onDelete} hitSlop={8} className="active:opacity-70">

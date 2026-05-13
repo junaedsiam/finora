@@ -104,7 +104,7 @@ export default function EditSubCategoryScreen() {
               onChangeText={setName}
               placeholder="Sub-category name"
               placeholderTextColor={colors.muted}
-              className="rounded-xl border border-border px-4 py-3.5 text-base font-sans-medium text-foreground"
+              className="rounded-xl border border-border px-4 py-4 text-base font-sans-medium text-foreground"
             />
           </View>
 

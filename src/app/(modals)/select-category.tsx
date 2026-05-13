@@ -1,4 +1,5 @@
-import { View, Text, Pressable, ScrollView } from "react-native";
+import { useState } from "react";
+import { View, Text, Pressable, ScrollView, TextInput } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Feather from "@expo/vector-icons/Feather";
@@ -18,6 +19,20 @@ export default function SelectCategoryScreen() {
 
   const categoryType = (params.type ?? "expense") as CategoryType;
   const { data: categoriesWithSubs = [] } = useCategoriesForPicker(categoryType);
+  const [search, setSearch] = useState("");
+
+  const filtered = categoriesWithSubs
+    .map((parent) => {
+      const matchesParent = parent.name.toLowerCase().includes(search.toLowerCase());
+      const matchedSubs = parent.subCategories.filter((sub) =>
+        sub.name.toLowerCase().includes(search.toLowerCase())
+      );
+      if (!search) return parent;
+      if (matchesParent) return { ...parent, subCategories: matchedSubs };
+      if (matchedSubs.length > 0) return { ...parent, subCategories: matchedSubs };
+      return null;
+    })
+    .filter(Boolean) as typeof categoriesWithSubs;
 
   return (
     <View className="flex-1 bg-background" style={{ paddingTop: insets.top }}>
@@ -35,15 +50,35 @@ export default function SelectCategoryScreen() {
         </Text>
       </View>
 
+      {/* Search */}
+      <View className="px-5 pb-3">
+        <View className="flex-row items-center rounded-xl border border-border px-3 py-4 bg-surface">
+          <Feather name="search" size={18} color={colors.muted} />
+          <TextInput
+            value={search}
+            onChangeText={setSearch}
+            placeholder="Search categories..."
+            placeholderTextColor={colors.muted}
+            className="flex-1 ml-2 text-base text-foreground"
+            style={{ fontFamily: "Inter_500Medium", padding: 0 }}
+          />
+          {search.length > 0 && (
+            <Pressable onPress={() => setSearch("")} hitSlop={6}>
+              <Feather name="x" size={16} color={colors.muted} />
+            </Pressable>
+          )}
+        </View>
+      </View>
+
       {/* List */}
       <ScrollView className="flex-1 px-4">
-        {categoriesWithSubs.length === 0 ? (
+        {filtered.length === 0 ? (
           <View className="items-center py-12">
-            <Feather name="folder" size={40} color={colors.muted} />
-            <Text className="text-muted mt-3">No categories yet</Text>
+            <Feather name={search ? "search" : "folder"} size={40} color={colors.muted} />
+            <Text className="text-muted mt-3">{search ? "No results found" : "No categories yet, add one in Settings"}</Text>
           </View>
         ) : (
-          categoriesWithSubs.map((parent) => (
+          filtered.map((parent) => (
             <View key={parent.id}>
               {/* Parent Category */}
               <Pressable

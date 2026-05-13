@@ -84,7 +84,7 @@ export default function AddRecurringScreen() {
           >
             Name
           </Text>
-          <View className="flex-row items-center rounded-xl border border-border px-3 py-3">
+          <View className="flex-row items-center rounded-xl border border-border px-3 py-4">
             <Feather name="tag" size={18} color={colors.muted} />
             <TextInput
               value={name}
@@ -105,7 +105,7 @@ export default function AddRecurringScreen() {
           >
             Amount
           </Text>
-          <View className="flex-row items-center rounded-xl border border-border px-3 py-3">
+          <View className="flex-row items-center rounded-xl border border-border px-3 py-4">
             <Feather name="dollar-sign" size={18} color={colors.muted} />
             <TextInput
               value={amount}
@@ -205,7 +205,7 @@ export default function AddRecurringScreen() {
           >
             Note (optional)
           </Text>
-          <View className="flex-row items-center rounded-xl border border-border px-3 py-3">
+          <View className="flex-row items-center rounded-xl border border-border px-3 py-4">
             <Feather name="file-text" size={18} color={colors.muted} />
             <TextInput
               value={note}

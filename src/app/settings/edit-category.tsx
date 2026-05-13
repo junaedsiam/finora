@@ -137,7 +137,7 @@ export default function EditCategoryScreen() {
               onChangeText={setName}
               placeholder="Category name"
               placeholderTextColor={colors.muted}
-              className="rounded-xl border border-border px-4 py-3.5 text-base font-sans-medium text-foreground"
+              className="rounded-xl border border-border px-4 py-4 text-base font-sans-medium text-foreground"
             />
           </View>
 
@@ -148,7 +148,7 @@ export default function EditCategoryScreen() {
             </Text>
             <Pressable
               onPress={() => setColorDropdownOpen((v) => !v)}
-              className="flex-row items-center rounded-xl border border-border px-4 py-3.5 active:opacity-70"
+              className="flex-row items-center rounded-xl border border-border px-4 py-4 active:opacity-70"
             >
               <View
                 className="w-6 h-6 mr-3 rounded-full"
@@ -208,7 +208,7 @@ export default function EditCategoryScreen() {
                   params: { selected: selectedIcon, color: selectedColor },
                 })
               }
-              className="flex-row items-center rounded-xl border border-border px-4 py-3.5 active:opacity-70"
+              className="flex-row items-center rounded-xl border border-border px-4 py-4 active:opacity-70"
             >
               <View
                 className="items-center justify-center w-8 h-8 mr-3 rounded-lg"
