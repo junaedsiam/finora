@@ -4,6 +4,7 @@ import { Stack } from "expo-router";
 import { useColorScheme } from "nativewind";
 import * as SplashScreen from "expo-splash-screen";
 import { useFonts } from "expo-font";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 import {
   Inter_400Regular,
   Inter_500Medium,
@@ -61,41 +62,43 @@ export default function RootLayout() {
   if (!fontsLoaded) return null;
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <DatabaseProvider>
-        <Stack>
-          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-          <Stack.Screen
-            name="settings"
-            options={{
-              headerShown: false,
-              animation: "none",
-            }}
-          />
-          <Stack.Screen
-            name="debt"
-            options={{
-              headerShown: false,
-              animation: "none",
-            }}
-          />
-          <Stack.Screen
-            name="recurring"
-            options={{
-              headerShown: false,
-              animation: "none",
-            }}
-          />
-          <Stack.Screen
-            name="(modals)"
-            options={{
-              headerShown: false,
-              presentation: "modal",
-              animation: "slide_from_bottom",
-            }}
-          />
-        </Stack>
-      </DatabaseProvider>
-    </QueryClientProvider>
+    <GestureHandlerRootView className="flex-1">
+      <QueryClientProvider client={queryClient}>
+        <DatabaseProvider>
+          <Stack>
+            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+            <Stack.Screen
+              name="settings"
+              options={{
+                headerShown: false,
+                animation: "none",
+              }}
+            />
+            <Stack.Screen
+              name="debt"
+              options={{
+                headerShown: false,
+                animation: "none",
+              }}
+            />
+            <Stack.Screen
+              name="recurring"
+              options={{
+                headerShown: false,
+                animation: "none",
+              }}
+            />
+            <Stack.Screen
+              name="(modals)"
+              options={{
+                headerShown: false,
+                presentation: "modal",
+                animation: "slide_from_bottom",
+              }}
+            />
+          </Stack>
+        </DatabaseProvider>
+      </QueryClientProvider>
+    </GestureHandlerRootView>
   );
 }

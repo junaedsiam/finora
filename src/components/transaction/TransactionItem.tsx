@@ -38,7 +38,7 @@ export function TransactionItem({
       className="flex-row items-center py-3"
       style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
     >
-      <IconCircle icon={icon} bgColor={iconBg} size={44} />
+      <IconCircle icon={icon} bgColor={iconBg} size={44} iconColor="rgba(0,0,0,0.55)" />
       <View className="flex-1 ml-3">
         <Text
           className="text-base text-foreground"

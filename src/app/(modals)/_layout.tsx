@@ -31,6 +31,13 @@ export default function ModalLayout() {
           contentStyle: { backgroundColor: colors.background },
         }}
       />
+      <Stack.Screen
+        name="custom-date-range"
+        options={{
+          animation: "slide_from_bottom",
+          contentStyle: { backgroundColor: colors.background },
+        }}
+      />
     </Stack>
   );
 }

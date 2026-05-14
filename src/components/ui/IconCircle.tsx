@@ -17,7 +17,12 @@ export function IconCircle({
   return (
     <View
       className="items-center justify-center rounded-full"
-      style={{ width: size, height: size, backgroundColor: bgColor }}
+      style={{
+        width: size,
+        height: size,
+        backgroundColor: bgColor || "#9898A6",
+        borderRadius: size / 2,
+      }}
     >
       <Feather name={icon} size={size * 0.5} color={iconColor} />
     </View>
