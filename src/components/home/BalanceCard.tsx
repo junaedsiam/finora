@@ -1,11 +1,13 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { View, Text, Pressable, Modal } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import Feather from "@expo/vector-icons/Feather";
+import dayjs from "dayjs";
 import { formatCurrency } from "@/utils/currency";
 import { useUIStore } from "@/stores/ui.store";
 import { useWallets } from "@/hooks/useWallets";
 import { useAccounts } from "@/hooks/useAccount";
+import { useTransactions } from "@/hooks/useTransactions";
 import { useAccountStore } from "@/stores/account.store";
 import { useActiveCurrency } from "@/hooks/useActiveCurrency";
 import { router } from "expo-router";
@@ -19,12 +21,33 @@ export function BalanceCard() {
 
   const { data: wallets = [] } = useWallets();
   const { data: accounts = [] } = useAccounts();
+  const { data: transactions = [] } = useTransactions();
   const activeAccountId = useAccountStore((s) => s.activeAccountId);
   const setActiveAccountId = useAccountStore((s) => s.setActiveAccountId);
 
   const activeAccount = accounts.find((a) => a.id === activeAccountId);
   const totalBalance = wallets.reduce((sum, w) => sum + w.balance, 0);
   const currency = useActiveCurrency();
+
+  const { totalIncome, totalExpense } = useMemo(() => {
+    const now = dayjs();
+    const monthStart = now.startOf("month");
+    const monthEnd = now.endOf("month");
+
+    let income = 0;
+    let expense = 0;
+
+    for (const tx of transactions) {
+      if (tx.status !== "confirmed") continue;
+      const txDate = dayjs(tx.created_at);
+      if (txDate.isBefore(monthStart) || txDate.isAfter(monthEnd)) continue;
+
+      if (tx.type === "income") income += tx.amount;
+      else if (tx.type === "expense") expense += tx.amount;
+    }
+
+    return { totalIncome: income, totalExpense: expense };
+  }, [transactions]);
 
   const handleAccountSelect = (id: number) => {
     setActiveAccountId(id);
@@ -87,7 +110,7 @@ export function BalanceCard() {
           style={{ backgroundColor: "rgba(255,255,255,0.2)" }}
         />
 
-        {/* Income & Expense — placeholder until transactions are wired */}
+        {/* Income & Expense */}
         <View className="flex-row gap-8">
           <View>
             <View className="flex-row items-center gap-1 mb-1">
@@ -100,7 +123,7 @@ export function BalanceCard() {
               <Feather name="arrow-up-right" size={16} color="#4ADE80" />
             </View>
             <Text className="text-lg text-white font-sans-semibold">
-              {visible ? formatCurrency(0, { currency }) : "••••"}
+              {visible ? formatCurrency(totalIncome, { currency }) : "••••"}
             </Text>
           </View>
           <View>
@@ -114,7 +137,7 @@ export function BalanceCard() {
               <Feather name="arrow-down-right" size={16} color="#FF6B6B" />
             </View>
             <Text className="text-lg text-white font-sans-semibold">
-              {visible ? formatCurrency(0, { currency }) : "••••"}
+              {visible ? formatCurrency(totalExpense, { currency }) : "••••"}
             </Text>
           </View>
         </View>

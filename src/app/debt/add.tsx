@@ -1,16 +1,16 @@
-import { useState } from "react";
-import { View, Text, TextInput, ScrollView, Pressable } from "react-native";
+import { useState, useEffect } from "react";
+import { View, Text, TextInput, ScrollView, Pressable, Alert } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Feather from "@expo/vector-icons/Feather";
 import DatePicker from "react-native-date-picker";
 import { TabPill } from "@/components/ui/TabPill";
-import { DropdownField } from "@/components/ui/DropdownField";
 import { Button } from "@/components/ui/Button";
 import { useColors } from "@/constants/colors";
+import { useCreateDebt, useUpdateDebt, useDebt } from "@/hooks/useDebts";
+import { useWallets } from "@/hooks/useWallets";
 
 const TYPE_TABS = ["I Borrowed", "I Lent"];
-const DEMO_WALLETS = ["Cash", "Bank Account", "Credit Card", "Savings"];
 
 function formatDate(d: Date): string {
   return d.toLocaleDateString("en-US", {
@@ -25,15 +25,77 @@ export default function AddDebtScreen() {
   const insets = useSafeAreaInsets();
   const { editId } = useLocalSearchParams<{ editId?: string }>();
   const isEditing = !!editId;
+  const editIdNum = editId ? Number(editId) : 0;
   const colors = useColors();
+
+  const { data: wallets = [] } = useWallets();
+  const { data: existingDebt } = useDebt(editIdNum);
+  const { mutateAsync: createDebt, isPending: isCreating } = useCreateDebt();
+  const { mutateAsync: updateDebt, isPending: isUpdating } = useUpdateDebt();
 
   const [activeType, setActiveType] = useState(0);
   const [personName, setPersonName] = useState("");
   const [amount, setAmount] = useState("");
   const [dueDate, setDueDate] = useState(new Date());
   const [datePickerOpen, setDatePickerOpen] = useState(false);
-  const [walletIndex, setWalletIndex] = useState(0);
-  const [note, setNote] = useState("");
+  const [selectedWalletId, setSelectedWalletId] = useState<number | null>(null);
+
+  // Populate form when editing
+  useEffect(() => {
+    if (existingDebt) {
+      setActiveType(existingDebt.type === "borrow" ? 0 : 1);
+      setPersonName(existingDebt.name);
+      setAmount(existingDebt.original_amount.toString());
+      setSelectedWalletId(existingDebt.wallet_id);
+      if (existingDebt.due_date) {
+        setDueDate(new Date(existingDebt.due_date));
+      }
+    }
+  }, [existingDebt]);
+
+  const isSubmitting = isCreating || isUpdating;
+
+  const handleSubmit = async () => {
+    const numAmount = parseFloat(amount);
+    if (!personName.trim()) {
+      Alert.alert("Error", "Please enter a name");
+      return;
+    }
+    if (isNaN(numAmount) || numAmount <= 0) {
+      Alert.alert("Error", "Please enter a valid amount");
+      return;
+    }
+
+    const debtType = activeType === 0 ? "borrow" : "lend";
+
+    try {
+      if (isEditing) {
+        await updateDebt({
+          id: editIdNum,
+          name: personName.trim(),
+          type: debtType,
+          originalAmount: numAmount,
+          remainingAmount: existingDebt
+            ? existingDebt.remaining_amount + (numAmount - existingDebt.original_amount)
+            : numAmount,
+          dueDate: dueDate.toISOString(),
+          walletId: selectedWalletId,
+        });
+      } else {
+        await createDebt({
+          name: personName.trim(),
+          type: debtType,
+          originalAmount: numAmount,
+          remainingAmount: numAmount,
+          dueDate: dueDate.toISOString(),
+          walletId: selectedWalletId,
+        });
+      }
+      router.back();
+    } catch {
+      Alert.alert("Error", isEditing ? "Failed to update debt" : "Failed to create debt");
+    }
+  };
 
   return (
     <View className="flex-1 bg-background" style={{ paddingTop: insets.top }}>
@@ -118,13 +180,16 @@ export default function AddDebtScreen() {
           >
             Due Date
           </Text>
-          <DropdownField
-            icon="calendar"
-            label="Select date"
-            value={formatDate(dueDate)}
+          <Pressable
             onPress={() => setDatePickerOpen(true)}
-            flex={false}
-          />
+            className="flex-row items-center rounded-xl border border-border px-3 py-4"
+          >
+            <Feather name="calendar" size={18} color={colors.muted} />
+            <Text className="flex-1 text-base text-foreground ml-2" style={{ fontFamily: "Inter_500Medium" }}>
+              {formatDate(dueDate)}
+            </Text>
+            <Feather name="chevron-right" size={18} color={colors.muted} />
+          </Pressable>
         </View>
 
         {/* Wallet */}
@@ -133,43 +198,39 @@ export default function AddDebtScreen() {
             className="text-base text-muted mb-2"
             style={{ fontFamily: "Inter_500Medium" }}
           >
-            Wallet
+            Wallet (optional)
           </Text>
-          <DropdownField
-            icon="credit-card"
-            label="Select wallet"
-            value={DEMO_WALLETS[walletIndex]}
-            onPress={() =>
-              setWalletIndex((i) => (i + 1) % DEMO_WALLETS.length)
-            }
-            flex={false}
-          />
-        </View>
-
-        {/* Note */}
-        <View className="mt-4">
-          <Text
-            className="text-base text-muted mb-2"
-            style={{ fontFamily: "Inter_500Medium" }}
-          >
-            Note (optional)
-          </Text>
-          <View className="flex-row items-center rounded-xl border border-border px-3 py-4">
-            <Feather name="file-text" size={18} color={colors.muted} />
-            <TextInput
-              value={note}
-              onChangeText={setNote}
-              placeholder="Add a note..."
-              placeholderTextColor={colors.muted}
-              className="flex-1 text-base text-foreground ml-2"
-              style={{ fontFamily: "Inter_500Medium", padding: 0 }}
-            />
+          <View className="flex-row flex-wrap gap-2">
+            {wallets.map((wallet) => (
+              <Pressable
+                key={wallet.id}
+                onPress={() => setSelectedWalletId(wallet.id)}
+                className="rounded-xl px-3 py-2 border"
+                style={{
+                  borderColor: selectedWalletId === wallet.id ? wallet.color : colors.border,
+                  backgroundColor: selectedWalletId === wallet.id ? `${wallet.color}20` : "transparent",
+                }}
+              >
+                <Text
+                  className="text-sm font-sans-medium"
+                  style={{
+                    color: selectedWalletId === wallet.id ? wallet.color : colors.foreground,
+                  }}
+                >
+                  {wallet.name}
+                </Text>
+              </Pressable>
+            ))}
           </View>
         </View>
 
         {/* Submit */}
         <View className="mt-8 pb-8">
-          <Button label={isEditing ? "Update Debt" : "Add Debt"} />
+          <Button
+            label={isSubmitting ? "Saving..." : isEditing ? "Update Debt" : "Add Debt"}
+            onPress={handleSubmit}
+            disabled={isSubmitting}
+          />
         </View>
       </ScrollView>
 

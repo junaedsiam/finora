@@ -1,5 +1,6 @@
-import { View, Text, ScrollView } from "react-native";
+import { View, Text, ScrollView, Alert, Animated } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { Swipeable } from "react-native-gesture-handler";
 import BottomSheet from "@gorhom/bottom-sheet";
 import { router } from "expo-router";
 import { useRef, useCallback } from "react";
@@ -10,11 +11,12 @@ import { TimeRangeSelector } from "@/components/transaction/TimeRangeSelector";
 import { FilterPills } from "@/components/transaction/FilterPills";
 import { OverviewSection } from "@/components/transaction/OverviewSection";
 import { PeriodBottomSheet } from "@/components/transaction/PeriodBottomSheet";
-import { useTransactions } from "@/hooks/useTransactions";
+import { useTransactions, useDeleteTransaction } from "@/hooks/useTransactions";
 import { useWallets } from "@/hooks/useWallets";
 import { useCategories } from "@/hooks/useCategories";
 import { useColors } from "@/constants/colors";
 import { useTransactionFilter } from "@/stores/transaction-filter.store";
+import { useActiveCurrency } from "@/hooks/useActiveCurrency";
 import type { TransactionRow } from "@/types/database";
 
 function groupTransactionsByDate(
@@ -36,6 +38,8 @@ export default function TransactionsScreen() {
   const { data: wallets = [] } = useWallets();
   const { data: categories = [] } = useCategories();
   const { startDate, endDate, filterType } = useTransactionFilter();
+  const currency = useActiveCurrency();
+  const { mutate: deleteTx } = useDeleteTransaction();
 
   const bottomSheetRef = useRef<BottomSheet>(null);
 
@@ -95,17 +99,69 @@ export default function TransactionsScreen() {
                     tx.type === "transfer"
                       ? `${wallet?.name || "?"} → ${destWallet?.name || "?"}`
                       : wallet?.name || "Unknown wallet";
+
+                  const handleDelete = () => {
+                    Alert.alert(
+                      "Delete Transaction",
+                      "Are you sure? This will revert the wallet balance.",
+                      [
+                        { text: "Cancel", style: "cancel" },
+                        {
+                          text: "Delete",
+                          style: "destructive",
+                          onPress: () => deleteTx(tx.id),
+                        },
+                      ]
+                    );
+                  };
+
+                  const renderRightActions = (
+                    progress: Animated.AnimatedInterpolation<number>,
+                    dragX: Animated.AnimatedInterpolation<number>
+                  ) => {
+                    const trans = dragX.interpolate({
+                      inputRange: [-80, 0],
+                      outputRange: [0, 80],
+                      extrapolate: "clamp",
+                    });
+                    return (
+                      <Animated.View
+                        style={{
+                          transform: [{ translateX: trans }],
+                          justifyContent: "center",
+                          alignItems: "center",
+                          width: 80,
+                          backgroundColor: colors.expense,
+                          borderRadius: 12,
+                          marginVertical: 4,
+                        }}
+                      >
+                        <Text className="text-white font-sans-semibold text-sm">
+                          Delete
+                        </Text>
+                      </Animated.View>
+                    );
+                  };
+
                   return (
-                    <TransactionItem
+                    <Swipeable
                       key={tx.id}
-                      title={title}
-                      subtitle={subtitle}
-                      amount={tx.amount}
-                      type={tx.type}
-                      time={dayjs(tx.created_at).format("HH:mm")}
-                      icon={(category?.icon as any) || "circle"}
-                      iconBg={category?.color || colors.muted}
-                    />
+                      renderRightActions={renderRightActions}
+                      onSwipeableOpen={handleDelete}
+                      friction={2}
+                      rightThreshold={40}
+                    >
+                      <TransactionItem
+                        title={title}
+                        subtitle={subtitle}
+                        amount={tx.amount}
+                        type={tx.type}
+                        time={dayjs(tx.created_at).format("HH:mm")}
+                        icon={(category?.icon as any) || "circle"}
+                        iconBg={category?.color || colors.muted}
+                        currency={currency}
+                      />
+                    </Swipeable>
                   );
                 })}
               </TransactionDateGroup>

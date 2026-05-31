@@ -2,10 +2,12 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   getTransactionsByAccount,
   getTransactionById,
-  createTransaction,
-  updateTransaction,
-  deleteTransaction,
 } from "@/repositories/transaction.repository";
+import {
+  createTransactionAtomic,
+  updateTransactionAtomic,
+  deleteTransactionAtomic,
+} from "@/services/transaction.service";
 import { useAccountStore } from "@/stores/account.store";
 import type { TransactionRow, TransactionType, TransactionStatus } from "@/types/database";
 
@@ -28,7 +30,7 @@ export function useCreateTransaction() {
   const qc = useQueryClient();
   const activeAccountId = useAccountStore((s) => s.activeAccountId);
   return useMutation({
-    mutationFn: (params: {
+    mutationFn: async (params: {
       walletId: number;
       destinationWalletId?: number | null;
       categoryId: number;
@@ -37,10 +39,12 @@ export function useCreateTransaction() {
       note?: string | null;
       status?: TransactionStatus;
       createdAt?: string;
-    }) => createTransaction({ accountId: activeAccountId, ...params }),
+    }) =>
+      createTransactionAtomic({ accountId: activeAccountId, ...params }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["transactions", activeAccountId] });
       qc.invalidateQueries({ queryKey: ["wallets", activeAccountId] });
+      qc.invalidateQueries({ queryKey: ["balance", activeAccountId] });
     },
   });
 }
@@ -49,7 +53,7 @@ export function useUpdateTransaction() {
   const qc = useQueryClient();
   const activeAccountId = useAccountStore((s) => s.activeAccountId);
   return useMutation({
-    mutationFn: (params: {
+    mutationFn: async (params: {
       id: number;
       walletId?: number;
       destinationWalletId?: number | null;
@@ -57,9 +61,13 @@ export function useUpdateTransaction() {
       amount?: number;
       note?: string | null;
       status?: TransactionStatus;
-    }) => updateTransaction(params.id, params),
+    }) => {
+      updateTransactionAtomic(params);
+    },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["transactions", activeAccountId] });
+      qc.invalidateQueries({ queryKey: ["wallets", activeAccountId] });
+      qc.invalidateQueries({ queryKey: ["balance", activeAccountId] });
     },
   });
 }
@@ -68,10 +76,13 @@ export function useDeleteTransaction() {
   const qc = useQueryClient();
   const activeAccountId = useAccountStore((s) => s.activeAccountId);
   return useMutation({
-    mutationFn: (id: number) => deleteTransaction(id),
+    mutationFn: async (id: number) => {
+      deleteTransactionAtomic(id);
+    },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["transactions", activeAccountId] });
       qc.invalidateQueries({ queryKey: ["wallets", activeAccountId] });
+      qc.invalidateQueries({ queryKey: ["balance", activeAccountId] });
     },
   });
 }

@@ -16,8 +16,6 @@ import { DropdownField } from "@/components/ui/DropdownField";
 import { Button } from "@/components/ui/Button";
 import { useTransactionFormStore } from "@/stores/transaction-form.store";
 import { useCreateTransaction } from "@/hooks/useTransactions";
-import { useWallets } from "@/hooks/useWallets";
-import { useUpdateWalletBalance } from "@/hooks/useWallets";
 import { useActiveCurrency } from "@/hooks/useActiveCurrency";
 import { formatCurrency } from "@/utils/currency";
 import { useColors } from "@/constants/colors";
@@ -41,9 +39,7 @@ export function TransactionForm() {
   const router = useRouter();
   const colors = useColors();
   const { category, fromWallet, toWallet, reset } = useTransactionFormStore();
-  const { data: wallets = [] } = useWallets();
   const { mutateAsync: createTx } = useCreateTransaction();
-  const { mutateAsync: updateWalletBalanceMut } = useUpdateWalletBalance();
   const activeCurrency = useActiveCurrency();
   const symbol = currencySymbolMap.get(activeCurrency) ?? activeCurrency;
 
@@ -94,9 +90,8 @@ export function TransactionForm() {
 
       if (activeTab === 0) {
         // Income: money goes INTO toWallet
-        const walletId = parseInt(toWallet!.id);
         await createTx({
-          walletId,
+          walletId: parseInt(toWallet!.id),
           destinationWalletId: undefined,
           categoryId,
           type: "income",
@@ -104,15 +99,10 @@ export function TransactionForm() {
           note: description || null,
           createdAt: date.toISOString(),
         });
-        const wallet = wallets.find((w) => w.id === walletId);
-        if (wallet) {
-          await updateWalletBalanceMut({ id: walletId, balance: wallet.balance + numAmount });
-        }
       } else if (isTransfer) {
         // Transfer: fromWallet -> toWallet
-        const fromWalletId = parseInt(fromWallet!.id);
         await createTx({
-          walletId: fromWalletId,
+          walletId: parseInt(fromWallet!.id),
           destinationWalletId: parseInt(toWallet!.id),
           categoryId,
           type: "transfer",
@@ -120,19 +110,10 @@ export function TransactionForm() {
           note: description || null,
           createdAt: date.toISOString(),
         });
-        const srcWallet = wallets.find((w) => w.id === fromWalletId);
-        const dstWallet = wallets.find((w) => w.id === parseInt(toWallet!.id));
-        if (srcWallet) {
-          await updateWalletBalanceMut({ id: fromWalletId, balance: srcWallet.balance - numAmount });
-        }
-        if (dstWallet) {
-          await updateWalletBalanceMut({ id: parseInt(toWallet!.id), balance: dstWallet.balance + numAmount });
-        }
       } else {
         // Expense: money leaves fromWallet
-        const walletId = parseInt(fromWallet!.id);
         await createTx({
-          walletId,
+          walletId: parseInt(fromWallet!.id),
           destinationWalletId: undefined,
           categoryId,
           type: "expense",
@@ -140,10 +121,6 @@ export function TransactionForm() {
           note: description || null,
           createdAt: date.toISOString(),
         });
-        const wallet = wallets.find((w) => w.id === walletId);
-        if (wallet) {
-          await updateWalletBalanceMut({ id: walletId, balance: wallet.balance - numAmount });
-        }
       }
 
       reset();

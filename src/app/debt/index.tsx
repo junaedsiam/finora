@@ -1,71 +1,58 @@
 import { useState } from "react";
-import { View, Text, ScrollView, Pressable } from "react-native";
+import { View, Text, ScrollView, Pressable, Alert } from "react-native";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Feather from "@expo/vector-icons/Feather";
+import dayjs from "dayjs";
 import { TabPill } from "@/components/ui/TabPill";
 import { DebtCard } from "@/components/home/DebtCard";
 import { formatCurrency } from "@/utils/currency";
 import { useActiveCurrency } from "@/hooks/useActiveCurrency";
+import { useAllDebts, useDeleteDebt } from "@/hooks/useDebts";
 import { useColors } from "@/constants/colors";
 
 const TABS = ["I Borrowed", "I Lent"];
 
-const MOCK_DEBTS = [
-  {
-    id: 1,
-    person: "John Doe",
-    type: "borrowed" as const,
-    totalAmount: 1000,
-    remainingAmount: 800,
-    dueDate: "May 15, 2026",
-  },
-  {
-    id: 2,
-    person: "Mike Ross",
-    type: "borrowed" as const,
-    totalAmount: 500,
-    remainingAmount: 200,
-    dueDate: "Jun 10, 2026",
-  },
-  {
-    id: 3,
-    person: "Sarah Kim",
-    type: "lent" as const,
-    totalAmount: 500,
-    remainingAmount: 500,
-    dueDate: "Jun 1, 2026",
-  },
-  {
-    id: 4,
-    person: "Alex Chen",
-    type: "lent" as const,
-    totalAmount: 200,
-    remainingAmount: 50,
-    dueDate: "Jul 20, 2026",
-  },
-];
+function mapDebtType(type: "borrow" | "lend"): "borrowed" | "lent" {
+  return type === "borrow" ? "borrowed" : "lent";
+}
 
 export default function DebtManagementScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const colors = useColors();
   const currency = useActiveCurrency();
+  const { data: debts = [] } = useAllDebts();
+  const { mutate: deleteDebt } = useDeleteDebt();
   const [activeTab, setActiveTab] = useState(0);
 
   const isBorrowed = activeTab === 0;
-  const filtered = MOCK_DEBTS.filter((d) =>
-    isBorrowed ? d.type === "borrowed" : d.type === "lent"
-  );
+  const dbType = isBorrowed ? "borrow" : "lend";
+  const filtered = debts.filter((d) => d.type === dbType);
 
   const totalRemaining = filtered.reduce(
-    (sum, d) => sum + d.remainingAmount,
+    (sum, d) => sum + d.remaining_amount,
     0
   );
 
   const summaryLabel = isBorrowed
     ? `Not yet paid ${formatCurrency(totalRemaining, { currency })}`
     : `Not yet received ${formatCurrency(totalRemaining, { currency })}`;
+
+  const handleDelete = (id: number, name: string) => {
+    Alert.alert(
+      "Delete Debt",
+      `Are you sure you want to delete "${name}"?`,
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: () => deleteDebt(id),
+        },
+      ]
+    );
+  };
 
   return (
     <View className="flex-1 bg-background" style={{ paddingTop: insets.top }}>
@@ -125,11 +112,11 @@ export default function DebtManagementScreen() {
           {filtered.map((debt) => (
             <DebtCard
               key={debt.id}
-              person={debt.person}
-              type={debt.type}
-              totalAmount={debt.totalAmount}
-              remainingAmount={debt.remainingAmount}
-              dueDate={debt.dueDate}
+              person={debt.name}
+              type={mapDebtType(debt.type)}
+              totalAmount={debt.original_amount}
+              remainingAmount={debt.remaining_amount}
+              dueDate={debt.due_date ? dayjs(debt.due_date).format("MMM D, YYYY") : "No due date"}
               currency={currency}
               onPress={() => router.push(`/debt/${debt.id}`)}
             />
