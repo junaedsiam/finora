@@ -160,6 +160,12 @@ export default function TransactionsScreen() {
                         icon={(category?.icon as any) || "circle"}
                         iconBg={category?.color || colors.muted}
                         currency={currency}
+                        onPress={() =>
+                          router.push({
+                            pathname: "/(modals)/add-transaction",
+                            params: { editId: tx.id.toString() },
+                          })
+                        }
                       />
                     </Swipeable>
                   );

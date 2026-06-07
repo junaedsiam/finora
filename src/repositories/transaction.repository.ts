@@ -97,3 +97,57 @@ export async function updateTransaction(
 export async function deleteTransaction(id: number): Promise<void> {
   db.runSync("DELETE FROM transactions WHERE id = ?", [id]);
 }
+
+export type CategoryStatRow = {
+  category_id: number;
+  name: string;
+  icon: string;
+  color: string;
+  total_amount: number;
+  transaction_count: number;
+};
+
+export function getTransactionStatsByCategory(
+  accountId: number,
+  startDate: string,
+  endDate: string,
+  type: "income" | "expense",
+): CategoryStatRow[] {
+  return db.getAllSync<CategoryStatRow>(
+    `SELECT
+       t.category_id,
+       c.name,
+       c.icon,
+       c.color,
+       SUM(t.amount) as total_amount,
+       COUNT(*) as transaction_count
+     FROM transactions t
+     JOIN categories c ON t.category_id = c.id
+     WHERE t.account_id = ?
+       AND t.type = ?
+       AND t.status = 'confirmed'
+       AND t.created_at BETWEEN ? AND ?
+     GROUP BY t.category_id
+     ORDER BY total_amount DESC`,
+    [accountId, type, startDate, endDate],
+  );
+}
+
+export function getTransactionsByCategoryAndPeriod(
+  accountId: number,
+  categoryId: number,
+  startDate: string,
+  endDate: string,
+  type: "income" | "expense",
+): TransactionRow[] {
+  return db.getAllSync<TransactionRow>(
+    `SELECT * FROM transactions
+     WHERE account_id = ?
+       AND category_id = ?
+       AND type = ?
+       AND status = 'confirmed'
+       AND created_at BETWEEN ? AND ?
+     ORDER BY created_at DESC`,
+    [accountId, categoryId, type, startDate, endDate],
+  );
+}

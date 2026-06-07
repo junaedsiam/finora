@@ -1,7 +1,7 @@
 # Finora - Task List
 
 > Living document tracking implementation progress against the plan in `CLAUDE.md`.
-> Last updated: 2026-05-31 (Fix round 1: currency, BalanceCard income/expense, atomic service layer, swipe-to-delete, full debt system)
+> Last updated: 2026-05-31 (Fix round 1: currency, BalanceCard income/expense, atomic service layer, swipe-to-delete, full debt system, transaction editing, recent transactions on home)
 
 ---
 
@@ -168,7 +168,7 @@
 - [x] Create transaction (income/expense/transfer) — atomic via service layer
 - [x] Wallet balance updates on create — atomic via service layer
 - [x] Atomic balance updates — `transaction.service.ts` uses `withTransactionSync`
-- [ ] Edit transaction — no UI/flow
+- [x] Edit transaction — tap any transaction item to open edit modal with pre-filled data
 - [x] Delete transaction with balance revert — atomic via service layer
 - [x] Swipe-to-delete on transaction list — with confirmation dialog
 - [ ] Transaction detail screen
@@ -217,18 +217,43 @@
 
 ---
 
-## Phase 10: Calendar & Statistics — NOT STARTED
+## Phase 10: Calendar & Statistics — IN PROGRESS
+
+### 10A. Statistics / Analytics Screen
+
+> **Goal**: Category breakdown analytics with pie chart, date filtering, and category drill-down.
+
+**Data Layer**
+- [x] Add `getTransactionStatsByCategory` to `transaction.repository.ts` — SQL aggregation by category with SUM(amount), COUNT(*)
+- [x] Create `src/hooks/useStats.ts` — React Query hook for stats data (`['stats', accountId, start, end, type]`)
+
+**UI Components (`src/components/stats/`)**
+- [x] `StatsPeriodSelector.tsx` — Date range navigator with prev/next arrows and period pills (Week/Month/Quarter/Year)
+- [x] `StatsTypeTabs.tsx` — Income / Expense toggle, expense default
+- [x] `PieChart.tsx` — SVG donut/pie chart using `react-native-svg`. Renders slices with category colors. Total amount in center.
+- [x] `CategoryBreakdownItem.tsx` — Single category row: icon circle, name, percentage bar, amount, transaction count
+- [x] `CategoryBreakdownList.tsx` — Descending-order list of `CategoryBreakdownItem`
+
+**Screens**
+- [x] `src/app/(tabs)/stats.tsx` — Main analytics screen composing: PeriodSelector + TypeTabs + PieChart + CategoryBreakdownList
+- [x] `src/app/stats/category/[id].tsx` — Category detail screen: category name as title, list of transactions for that category in selected period
+- [x] `src/app/stats/_layout.tsx` — Stack layout for stats routes
+- [x] Update `src/app/_layout.tsx` — Add `stats` stack screen config
+
+**Routing & Integration**
+- [x] Tap category item → navigate to `/stats/category/${categoryId}` with query params for period + type
+- [x] Use existing `TransactionItem` component for transaction list on detail screen
+- [x] `react-native-svg` installed for chart rendering
+
+### 10B. Calendar Screen — NOT STARTED
 
 - [ ] Calendar grid component (`CalendarGrid`, `DayCell`)
 - [ ] Monthly transaction query grouped by day
 - [ ] Day tap to see transactions
-- [ ] Stats screen with real data
-- [ ] Pie chart for category breakdown
 - [ ] Bar chart for trends
-- [ ] Period selector for stats
 - [ ] `victory-native` charts integration
 
-> Current state: `calendar.tsx` and `stats.tsx` are placeholder screens with only a title.
+> Current state: `calendar.tsx` is placeholder. `stats.tsx` is now implemented.
 
 ---
 
@@ -284,7 +309,7 @@
 3. **Mock data remaining** — Budgets and upcoming costs (recurring) still use hardcoded mock data.
 4. **Calendar & Stats** — Placeholder screens only.
 5. [x] ~~**Transaction delete** — Fixed. Swipe-to-delete with confirmation dialog wired to atomic delete service.~~
-6. **Transaction edit** — No edit flow exists.
+6. [x] ~~**Transaction edit** — Done. Tap any transaction to open edit modal with pre-filled data.~~
 7. [x] ~~**Missing repositories** — Debt repository created. Budget and recurring still missing.~~
 8. [x] ~~**Missing hooks** — useDebts created. useBudgets, useRecurring, useBalance, useCalendar still missing.~~
 9. **Recurring engine** — No pending generation or auto-confirm logic.
@@ -299,7 +324,7 @@
 ### Immediate (High Impact, Low Effort)
 1. [x] ~~**Fix BalanceCard income/expense** — Done.~~
 2. [x] ~~**Add swipe-to-delete on transaction list** — Done.~~
-3. **Add transaction detail/edit flow** — Tap transaction item to view/edit.
+3. [x] ~~**Add transaction detail/edit flow** — Done. Transaction items are tappable, form supports edit mode with atomic rebalancing.~~
 
 ### Short Term (Core Features)
 4. **Build Budget data layer** — Repository + hooks + wire BudgetSection to real data.

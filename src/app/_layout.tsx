@@ -89,6 +89,13 @@ export default function RootLayout() {
               }}
             />
             <Stack.Screen
+              name="stats"
+              options={{
+                headerShown: false,
+                animation: "none",
+              }}
+            />
+            <Stack.Screen
               name="(modals)"
               options={{
                 headerShown: false,

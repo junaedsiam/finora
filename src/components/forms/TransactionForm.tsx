@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -15,7 +15,13 @@ import { TabPill } from "@/components/ui/TabPill";
 import { DropdownField } from "@/components/ui/DropdownField";
 import { Button } from "@/components/ui/Button";
 import { useTransactionFormStore } from "@/stores/transaction-form.store";
-import { useCreateTransaction } from "@/hooks/useTransactions";
+import {
+  useCreateTransaction,
+  useUpdateTransaction,
+  useTransaction,
+} from "@/hooks/useTransactions";
+import { useWallets } from "@/hooks/useWallets";
+import { useCategories } from "@/hooks/useCategories";
 import { useActiveCurrency } from "@/hooks/useActiveCurrency";
 import { formatCurrency } from "@/utils/currency";
 import { useColors } from "@/constants/colors";
@@ -35,13 +41,31 @@ function formatDate(d: Date): string {
   });
 }
 
-export function TransactionForm() {
+type TransactionFormProps = {
+  editId?: number;
+};
+
+export function TransactionForm({ editId }: TransactionFormProps) {
   const router = useRouter();
   const colors = useColors();
-  const { category, fromWallet, toWallet, reset } = useTransactionFormStore();
+  const {
+    category,
+    fromWallet,
+    toWallet,
+    setCategory,
+    setFromWallet,
+    setToWallet,
+    reset,
+  } = useTransactionFormStore();
   const { mutateAsync: createTx } = useCreateTransaction();
+  const { mutateAsync: updateTx } = useUpdateTransaction();
+  const { data: existingTx, isLoading: isLoadingTx } = useTransaction(editId ?? 0);
+  const { data: wallets = [] } = useWallets();
+  const { data: categories = [] } = useCategories();
   const activeCurrency = useActiveCurrency();
   const symbol = currencySymbolMap.get(activeCurrency) ?? activeCurrency;
+
+  const isEditing = !!editId;
 
   const [activeTab, setActiveTab] = useState(1);
   const [amount, setAmount] = useState("");
@@ -54,7 +78,76 @@ export function TransactionForm() {
   const isTransfer = activeTab === 2;
   const currentType = activeTab === 0 ? "income" : "expense";
 
+  // Populate form when editing and data loads
+  useEffect(() => {
+    if (!isEditing || !existingTx) return;
+
+    // Set amount
+    setAmount(existingTx.amount.toString());
+
+    // Set date
+    setDate(new Date(existingTx.created_at));
+
+    // Set description
+    if (existingTx.note) {
+      setDescription(existingTx.note);
+      setShowDescription(true);
+    }
+
+    // Set tab based on type
+    if (existingTx.type === "income") setActiveTab(0);
+    else if (existingTx.type === "expense") setActiveTab(1);
+    else setActiveTab(2);
+
+    // Set category in store
+    const cat = categories.find((c) => c.id === existingTx.category_id);
+    if (cat) {
+      setCategory({
+        id: cat.id.toString(),
+        name: cat.name,
+        icon: cat.icon,
+        color: cat.color,
+      });
+    }
+
+    // Set wallets in store
+    const wallet = wallets.find((w) => w.id === existingTx.wallet_id);
+    if (wallet) {
+      const pickerWallet = {
+        id: wallet.id.toString(),
+        name: wallet.name,
+        icon: wallet.icon,
+        color: wallet.color,
+      };
+      if (existingTx.type === "income") {
+        setToWallet(pickerWallet);
+      } else {
+        setFromWallet(pickerWallet);
+      }
+    }
+
+    if (existingTx.destination_wallet_id) {
+      const destWallet = wallets.find(
+        (w) => w.id === existingTx.destination_wallet_id
+      );
+      if (destWallet) {
+        setToWallet({
+          id: destWallet.id.toString(),
+          name: destWallet.name,
+          icon: destWallet.icon,
+          color: destWallet.color,
+        });
+      }
+    }
+  }, [isEditing, existingTx, categories, wallets]);
+
+  // Reset store on unmount
+  useEffect(() => {
+    return () => reset();
+  }, []);
+
   const handleTabChange = (index: number) => {
+    if (isEditing) return; // Disable type changes during edit
     if (index !== activeTab) {
       reset();
     }
@@ -88,49 +181,74 @@ export function TransactionForm() {
     try {
       const categoryId = parseInt(category.id);
 
-      if (activeTab === 0) {
-        // Income: money goes INTO toWallet
-        await createTx({
-          walletId: parseInt(toWallet!.id),
-          destinationWalletId: undefined,
+      if (isEditing && existingTx) {
+        // UPDATE
+        const walletId =
+          activeTab === 0
+            ? parseInt(toWallet!.id)
+            : parseInt(fromWallet!.id);
+
+        await updateTx({
+          id: existingTx.id,
+          walletId,
+          destinationWalletId: isTransfer
+            ? parseInt(toWallet!.id)
+            : null,
           categoryId,
-          type: "income",
           amount: numAmount,
           note: description || null,
-          createdAt: date.toISOString(),
-        });
-      } else if (isTransfer) {
-        // Transfer: fromWallet -> toWallet
-        await createTx({
-          walletId: parseInt(fromWallet!.id),
-          destinationWalletId: parseInt(toWallet!.id),
-          categoryId,
-          type: "transfer",
-          amount: numAmount,
-          note: description || null,
-          createdAt: date.toISOString(),
         });
       } else {
-        // Expense: money leaves fromWallet
-        await createTx({
-          walletId: parseInt(fromWallet!.id),
-          destinationWalletId: undefined,
-          categoryId,
-          type: "expense",
-          amount: numAmount,
-          note: description || null,
-          createdAt: date.toISOString(),
-        });
+        // CREATE
+        if (activeTab === 0) {
+          await createTx({
+            walletId: parseInt(toWallet!.id),
+            destinationWalletId: undefined,
+            categoryId,
+            type: "income",
+            amount: numAmount,
+            note: description || null,
+            createdAt: date.toISOString(),
+          });
+        } else if (isTransfer) {
+          await createTx({
+            walletId: parseInt(fromWallet!.id),
+            destinationWalletId: parseInt(toWallet!.id),
+            categoryId,
+            type: "transfer",
+            amount: numAmount,
+            note: description || null,
+            createdAt: date.toISOString(),
+          });
+        } else {
+          await createTx({
+            walletId: parseInt(fromWallet!.id),
+            destinationWalletId: undefined,
+            categoryId,
+            type: "expense",
+            amount: numAmount,
+            note: description || null,
+            createdAt: date.toISOString(),
+          });
+        }
       }
 
       reset();
       router.back();
     } catch (err) {
-      Alert.alert("Error", "Failed to create transaction");
+      Alert.alert("Error", isEditing ? "Failed to update transaction" : "Failed to create transaction");
     } finally {
       setIsSubmitting(false);
     }
   };
+
+  if (isEditing && isLoadingTx) {
+    return (
+      <View className="flex-1 items-center justify-center">
+        <Text className="text-muted">Loading...</Text>
+      </View>
+    );
+  }
 
   return (
     <KeyboardAvoidingView
@@ -143,6 +261,12 @@ export function TransactionForm() {
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
+        {isEditing && (
+          <Text className="text-center text-sm text-muted mb-2">
+            Editing transaction — type cannot be changed
+          </Text>
+        )}
+
         <TabPill
           options={TABS}
           activeIndex={activeTab}
@@ -266,14 +390,20 @@ export function TransactionForm() {
           >
             <Feather name="file-text" size={18} color={colors.muted} />
             <Text className="flex-1 ml-2 text-base font-sans-medium text-muted">
-              Add Description
+              {description || "Add Description"}
             </Text>
           </Pressable>
         )}
 
         <View className="pt-6 mt-6">
           <Button
-            label={isSubmitting ? "Saving..." : "Add Transaction"}
+            label={
+              isSubmitting
+                ? "Saving..."
+                : isEditing
+                ? "Update Transaction"
+                : "Add Transaction"
+            }
             onPress={handleSubmit}
             disabled={isSubmitting}
           />

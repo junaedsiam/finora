@@ -54,3 +54,10 @@ Join our community of developers creating universal apps.
 
 - [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
 - [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+
+# Analytics
+
+For analytics I think here will be the UI
+
+- Similar to transaction screen there will be a date filter available where it would be possible to select month, week, year etc....
+- There will be two tabs income and expense. expense will be default. A pie-chart will follow the selected type. That will have the the category colors reflected in the chart. In the middle of the chart total expense amount will be present. After the pie chart there will be a list of categories in descending order with total percentage amount and transaction counts. Clicking on the category item will take the users to separate screen which has the category as title, and a list of transactions of that category. Can you breakdown the tasks for that, add in the TASK.md ? And start working on it ?

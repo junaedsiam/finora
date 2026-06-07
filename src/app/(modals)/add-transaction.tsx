@@ -1,5 +1,5 @@
 import { View, Pressable, StyleSheet } from "react-native";
-import { useRouter } from "expo-router";
+import { useRouter, useLocalSearchParams } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Feather from "@expo/vector-icons/Feather";
 import { TransactionForm } from "@/components/forms/TransactionForm";
@@ -9,6 +9,8 @@ export default function AddTransactionModal() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const colors = useColors();
+  const { editId } = useLocalSearchParams<{ editId?: string }>();
+  const editIdNum = editId ? Number(editId) : undefined;
 
   return (
     <View
@@ -39,7 +41,7 @@ export default function AddTransactionModal() {
       </Pressable>
 
       <View style={styles.formContainer}>
-        <TransactionForm />
+        <TransactionForm editId={editIdNum} />
       </View>
     </View>
   );
