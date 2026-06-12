@@ -2,6 +2,7 @@ import "../global.css";
 import { useEffect, useState } from "react";
 import { Stack } from "expo-router";
 import { useColorScheme } from "nativewind";
+import { StatusBar } from "expo-status-bar";
 import * as SplashScreen from "expo-splash-screen";
 import { useFonts } from "expo-font";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
@@ -43,7 +44,16 @@ export default function RootLayout() {
   });
 
   const theme = useSettingsStore((s) => s.theme);
-  const { setColorScheme } = useColorScheme();
+  const { colorScheme, setColorScheme } = useColorScheme();
+
+  const statusBarStyle =
+    theme === "system"
+      ? colorScheme === "dark"
+        ? "light"
+        : "dark"
+      : theme === "dark"
+        ? "light"
+        : "dark";
 
   useEffect(() => {
     if (theme === "system") {
@@ -63,6 +73,7 @@ export default function RootLayout() {
 
   return (
     <GestureHandlerRootView className="flex-1">
+      <StatusBar style={statusBarStyle} />
       <QueryClientProvider client={queryClient}>
         <DatabaseProvider>
           <Stack>

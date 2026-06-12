@@ -93,14 +93,14 @@ export default function DebtManagementScreen() {
         <View
           className="rounded-2xl p-4 mt-4 items-center"
           style={{
-            backgroundColor: isBorrowed ? "#FEF2F2" : "#F0FDF4",
+            backgroundColor: isBorrowed ? "#FCA5A5" : "#86EFAC",
           }}
         >
           <Text
             className="text-base"
             style={{
               fontFamily: "Inter_600SemiBold",
-              color: isBorrowed ? colors.expense : colors.income,
+              color: "#222222",
             }}
           >
             {summaryLabel}

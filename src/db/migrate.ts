@@ -155,6 +155,89 @@ DROP INDEX IF EXISTS idx_categories_account;
 CREATE INDEX IF NOT EXISTS idx_categories_account ON categories(account_id, type, parent_id);
 `,
   },
+  {
+    version: 4,
+    sql: `-- Make category_id nullable in transactions for debt payments
+
+CREATE TABLE transactions_new (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  account_id INTEGER NOT NULL,
+  wallet_id INTEGER NOT NULL,
+  destination_wallet_id INTEGER,
+  category_id INTEGER,
+  type TEXT NOT NULL CHECK (type IN ('income', 'expense', 'transfer')),
+  amount REAL NOT NULL,
+  note TEXT,
+  status TEXT NOT NULL DEFAULT 'confirmed' CHECK (status IN ('confirmed', 'pending', 'skipped')),
+  recurring_id INTEGER,
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+  FOREIGN KEY (account_id) REFERENCES accounts(id) ON DELETE CASCADE,
+  FOREIGN KEY (wallet_id) REFERENCES wallets(id) ON DELETE CASCADE,
+  FOREIGN KEY (destination_wallet_id) REFERENCES wallets(id) ON DELETE SET NULL,
+  FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE SET NULL,
+  FOREIGN KEY (recurring_id) REFERENCES recurring(id) ON DELETE SET NULL
+);
+
+INSERT INTO transactions_new SELECT * FROM transactions;
+
+DROP TABLE transactions;
+
+ALTER TABLE transactions_new RENAME TO transactions;
+
+CREATE INDEX IF NOT EXISTS idx_transactions_account_created ON transactions(account_id, created_at);
+CREATE INDEX IF NOT EXISTS idx_transactions_wallet ON transactions(wallet_id);
+CREATE INDEX IF NOT EXISTS idx_transactions_category ON transactions(category_id);
+
+CREATE TRIGGER IF NOT EXISTS tr_transactions_updated AFTER UPDATE ON transactions
+BEGIN UPDATE transactions SET updated_at = datetime('now') WHERE id = NEW.id; END;
+`,
+  },
+  {
+    version: 5,
+    sql: `-- Add debt_id to transactions for payment tracking
+
+CREATE TABLE transactions_new (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  account_id INTEGER NOT NULL,
+  wallet_id INTEGER NOT NULL,
+  destination_wallet_id INTEGER,
+  category_id INTEGER,
+  type TEXT NOT NULL CHECK (type IN ('income', 'expense', 'transfer')),
+  amount REAL NOT NULL,
+  note TEXT,
+  status TEXT NOT NULL DEFAULT 'confirmed' CHECK (status IN ('confirmed', 'pending', 'skipped')),
+  recurring_id INTEGER,
+  debt_id INTEGER,
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+  FOREIGN KEY (account_id) REFERENCES accounts(id) ON DELETE CASCADE,
+  FOREIGN KEY (wallet_id) REFERENCES wallets(id) ON DELETE CASCADE,
+  FOREIGN KEY (destination_wallet_id) REFERENCES wallets(id) ON DELETE SET NULL,
+  FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE SET NULL,
+  FOREIGN KEY (recurring_id) REFERENCES recurring(id) ON DELETE SET NULL,
+  FOREIGN KEY (debt_id) REFERENCES debts(id) ON DELETE SET NULL
+);
+
+INSERT INTO transactions_new (
+  id, account_id, wallet_id, destination_wallet_id, category_id, type, amount, note, status, recurring_id, debt_id, created_at, updated_at
+)
+SELECT id, account_id, wallet_id, destination_wallet_id, category_id, type, amount, note, status, recurring_id, NULL, created_at, updated_at
+FROM transactions;
+
+DROP TABLE transactions;
+
+ALTER TABLE transactions_new RENAME TO transactions;
+
+CREATE INDEX IF NOT EXISTS idx_transactions_account_created ON transactions(account_id, created_at);
+CREATE INDEX IF NOT EXISTS idx_transactions_wallet ON transactions(wallet_id);
+CREATE INDEX IF NOT EXISTS idx_transactions_category ON transactions(category_id);
+CREATE INDEX IF NOT EXISTS idx_transactions_debt ON transactions(debt_id);
+
+CREATE TRIGGER IF NOT EXISTS tr_transactions_updated AFTER UPDATE ON transactions
+BEGIN UPDATE transactions SET updated_at = datetime('now') WHERE id = NEW.id; END;
+`,
+  },
 ];
 
 function splitSql(sql: string): string[] {

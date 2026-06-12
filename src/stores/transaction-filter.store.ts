@@ -1,5 +1,8 @@
 import { create } from "zustand";
 import dayjs from "dayjs";
+import quarterOfYear from "dayjs/plugin/quarterOfYear";
+
+dayjs.extend(quarterOfYear);
 
 export type Period = "day" | "week" | "month" | "quarter" | "year" | "all" | "custom";
 export type TransactionFilterType = "all" | "income" | "expense" | "transfer";

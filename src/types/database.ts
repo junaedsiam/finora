@@ -41,12 +41,13 @@ export type TransactionRow = {
   account_id: number;
   wallet_id: number;
   destination_wallet_id: number | null;
-  category_id: number;
+  category_id: number | null;
   type: TransactionType;
   amount: number;
   note: string | null;
   status: TransactionStatus;
   recurring_id: number | null;
+  debt_id: number | null;
   created_at: string;
   updated_at: string;
 };

@@ -1,5 +1,8 @@
 import { create } from "zustand";
 import dayjs from "dayjs";
+import quarterOfYear from "dayjs/plugin/quarterOfYear";
+
+dayjs.extend(quarterOfYear);
 
 export type StatsPeriod = "week" | "month" | "quarter" | "year";
 export type StatsType = "income" | "expense";
@@ -23,7 +26,7 @@ function getRange(period: StatsPeriod, base?: dayjs.Dayjs): { start: string; end
     case "month":
       return { start: d.startOf("month").toISOString(), end: d.endOf("month").toISOString() };
     case "quarter":
-      return { start: d.startOf("quarter" as any).toISOString(), end: d.endOf("quarter" as any).toISOString() };
+      return { start: d.startOf("quarter").toISOString(), end: d.endOf("quarter").toISOString() };
     case "year":
       return { start: d.startOf("year").toISOString(), end: d.endOf("year").toISOString() };
   }

@@ -270,14 +270,16 @@
 
 ---
 
-## Phase 12: Backup, Export & Import — NOT STARTED
+## Phase 12: Backup & Restore — NOT STARTED
 
-- [ ] CSV export
-- [ ] JSON export/import
-- [ ] Google Drive backup (`expo-auth-session`)
-- [ ] Local file backup (`expo-file-system`, `expo-sharing`)
-- [ ] Backup settings screen
-- [ ] Export settings screen
+**Design**: AES-256 encrypted `.finora` format (passphrase-based, universal across devices). NOT plain JSON.
+
+- [ ] Install deps: `expo-file-system`, `expo-sharing`, `expo-document-picker`, `crypto-js`
+- [ ] Create `src/services/backup.service.ts` — exportAllData / importAllData with AES encryption
+- [ ] Create `src/app/settings/backup.tsx` — Backup & Restore UI screen
+- [ ] Wire "Device" in `settings/index.tsx` → `/settings/backup`
+- [ ] Google Drive backup — deferred (requires `expo-auth-session` + GCP setup)
+- [ ] CSV / plain JSON export — deferred (future export feature)
 
 ---
 
@@ -297,8 +299,8 @@
 | `settings/currency-picker.tsx` | [x] Done | Currency selection |
 | `settings/theme.tsx` | [x] Done | Light/dark/system toggle |
 | `settings/startup-screen.tsx` | [x] Done | Default tab on launch |
-| `settings/backup.tsx` | [ ] Not found | Backup & restore UI |
-| `settings/export.tsx` | [ ] Not found | Export & import UI |
+| `settings/backup.tsx` | [ ] Not found | Backup & restore UI (encrypted `.finora`) |
+| `settings/export.tsx` | [ ] Not found | Export & import UI (future: plain JSON/CSV) |
 
 ---
 
@@ -316,6 +318,99 @@
 10. [x] ~~**Debt settlement** — Fixed. Atomic settlement service creates transaction + updates wallet + updates debt.~~
 11. **Budget-category linking** — Junction table exists but no CRUD.
 12. **Committed balance** — Not calculated (total - committed expenses + committed income).
+
+---
+
+## Backup Plan (Detailed)
+
+> **Goal**: Encrypted, universal, passphrase-based backup system for Finora.
+
+### 1. Format (`.finora`)
+
+- File name: `backup-YYYY-MM-DD-HH-MM-UTC.finora`
+- Content: AES-256-CBC encrypted JSON (via `crypto-js`)
+- Key derivation: Passphrase + salt `"finora-backup-v1"` → 256-bit key
+- **Not plain JSON** — encrypted by default
+
+### 2. Payload Structure
+
+```json
+{
+  "version": "1.0.0",
+  "exportedAt": "2026-06-12T10:30:00Z",
+  "appVersion": "1.0.0",
+  "data": {
+    "accounts": [...],
+    "wallets": [...],
+    "categories": [...],
+    "transactions": [...],
+    "budgets": [...],
+    "budget_categories": [...],
+    "debts": [...],
+    "recurring": [...]
+  }
+}
+```
+
+### 3. Passphrase Strategy
+
+- **User-provided passphrase** (no default — must enter one)
+- **App does NOT store passphrase** anywhere
+- **Universal**: Works across any device (iOS/Android) — just need the file + passphrase
+- If passphrase is lost, backup is unusable (by design)
+
+### 4. Export Flow
+
+1. User enters passphrase on backup screen
+2. Read all 8 tables from SQLite
+3. Serialize to JSON payload
+4. AES-256-CBC encrypt with passphrase
+5. Save to `FileSystem.cacheDirectory/backup-... .finora`
+6. Open `Sharing.shareAsync()` — user picks destination
+7. Show success toast
+
+### 5. Import Flow
+
+1. User picks `.finora` file via `DocumentPicker`
+2. Reads file content
+3. User enters passphrase
+4. Decrypt → parse JSON
+5. Validate structure (version, required fields)
+6. Show preview: record counts per table
+7. **Confirmation dialog**: "This will REPLACE all current data. Cannot be undone."
+8. On confirm:
+   - Start SQLite transaction
+   - Delete existing data for active account
+   - Insert in correct FK order (accounts → wallets → categories → budgets → budget_categories → debts → recurring → transactions)
+   - Commit transaction
+9. Show success → navigate Home → data reloads
+
+### 6. Dependencies
+
+| Package | Purpose |
+|---|---|
+| `expo-file-system` | Read/write cache files |
+| `expo-sharing` | Native share sheet (export) |
+| `expo-document-picker` | Pick `.finora` files (import) |
+| `crypto-js` | AES-256-CBC encryption |
+
+### 7. Edge Cases
+
+| Concern | Solution |
+|---|---|
+| Wrong passphrase | Decrypt fails → "Invalid passphrase" error |
+| Corrupted file | Parse fails → "Invalid backup file" |
+| Schema version mismatch | Reject or run migration on data object |
+| Import crash mid-way | Single `db.transaction()` — all or nothing |
+| Large file | AES on 3MB JSON ≈ 100ms on mobile |
+
+### 8. Files to Create
+
+| File | Purpose |
+|---|---|
+| `src/services/backup.service.ts` | Core export/import + encryption |
+| `src/app/settings/backup.tsx` | Backup & Restore UI |
+| Update `src/app/settings/index.tsx` | Wire "Device" button to backup screen |
 
 ---
 
@@ -339,5 +434,5 @@
 
 ### Long Term (Polish)
 11. Onboarding flow.
-12. Backup/export screens.
+12. Backup screen (encrypted `.finora`).
 13. Haptics, animations, FlashList.

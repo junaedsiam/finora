@@ -80,11 +80,11 @@ export default function CategoryStatsDetailScreen() {
               >
                 {txs.map((tx) => {
                   const wallet = walletMap.get(tx.wallet_id);
-                  const category = categoryMap.get(tx.category_id);
+                  const category = tx.category_id ? categoryMap.get(tx.category_id) : null;
                   const destWallet = tx.destination_wallet_id
                     ? walletMap.get(tx.destination_wallet_id)
                     : null;
-                  const title = category?.name || "Unknown";
+                  const title = category?.name || tx.note || "Payment";
                   const subtitle =
                     tx.type === "transfer"
                       ? `${wallet?.name || "?"} → ${destWallet?.name || "?"}`
@@ -98,8 +98,8 @@ export default function CategoryStatsDetailScreen() {
                       amount={tx.amount}
                       type={tx.type}
                       time={dayjs(tx.created_at).format("HH:mm")}
-                      icon={(category?.icon as any) || "circle"}
-                      iconBg={category?.color || "#9898A6"}
+                      icon={(category?.icon as any) || (tx.category_id === null ? "user" : "circle")}
+                      iconBg={category?.color || (tx.category_id === null ? (tx.type === "expense" ? "#FEE2E2" : "#DCFCE7") : "#9898A6")}
                       currency={currency}
                     />
                   );

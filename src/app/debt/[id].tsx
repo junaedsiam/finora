@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -13,13 +13,20 @@ import Feather from "@expo/vector-icons/Feather";
 import dayjs from "dayjs";
 import { IconCircle } from "@/components/ui/IconCircle";
 import { ProgressBar } from "@/components/ui/ProgressBar";
-import { Button } from "@/components/ui/Button";
 import { formatCurrency } from "@/utils/currency";
 import { useActiveCurrency } from "@/hooks/useActiveCurrency";
-import { useDebt, useDeleteDebt, useSettleDebt } from "@/hooks/useDebts";
+import {
+  useDebt,
+  useDeleteDebt,
+  useSettleDebt,
+  useDebtTransactions,
+  useEditDebtPayment,
+  useDeleteDebtPayment,
+} from "@/hooks/useDebts";
 import { useWallets } from "@/hooks/useWallets";
-import { useCategories } from "@/hooks/useCategories";
 import { useColors } from "@/constants/colors";
+import { useWalletPickerStore } from "@/stores/wallet-picker.store";
+import { InsufficientBalanceError } from "@/services/debt.service";
 
 export default function DebtDetailScreen() {
   const router = useRouter();
@@ -31,15 +38,26 @@ export default function DebtDetailScreen() {
   const currency = useActiveCurrency();
   const { data: debt, isLoading } = useDebt(debtId);
   const { data: wallets = [] } = useWallets();
-  const { data: categories = [] } = useCategories();
+  const { data: payments = [] } = useDebtTransactions(debtId);
   const { mutate: deleteDebt } = useDeleteDebt();
   const { mutateAsync: settleDebt, isPending: isSettling } = useSettleDebt();
+  const { mutateAsync: editPayment, isPending: isEditing } = useEditDebtPayment();
+  const { mutate: deletePayment } = useDeleteDebtPayment();
+  const { selectedWallet: pickedWallet, clearSelectedWallet } = useWalletPickerStore();
 
-  // Settlement form state
+  // Payment form state
   const [paymentAmount, setPaymentAmount] = useState("");
   const [selectedWalletId, setSelectedWalletId] = useState<number | null>(null);
-  const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null);
   const [showSettleForm, setShowSettleForm] = useState(false);
+  const [editingPaymentId, setEditingPaymentId] = useState<number | null>(null);
+
+  // Sync wallet picker store selection
+  useEffect(() => {
+    if (pickedWallet) {
+      setSelectedWalletId(Number(pickedWallet.id));
+      clearSelectedWallet();
+    }
+  }, [pickedWallet, clearSelectedWallet]);
 
   if (isLoading) {
     return (
@@ -68,17 +86,12 @@ export default function DebtDetailScreen() {
     : 0;
 
   const selectedWallet = wallets.find((w) => w.id === selectedWalletId);
-
-  // Get categories appropriate for the debt type
-  const relevantCategories = categories.filter((c) =>
-    isBorrow ? c.type === "expense" : c.type === "income"
-  );
-  const selectedCategory = relevantCategories.find((c) => c.id === selectedCategoryId);
+  const walletBalance = selectedWallet?.balance ?? 0;
 
   const handleDelete = () => {
     Alert.alert(
       "Delete Debt",
-      `Are you sure you want to delete "${debt.name}"?`,
+      `Are you sure you want to delete "${debt.name}"?\n\nAll payment records will be lost.`,
       [
         { text: "Cancel", style: "cancel" },
         {
@@ -93,6 +106,13 @@ export default function DebtDetailScreen() {
     );
   };
 
+  const resetForm = () => {
+    setPaymentAmount("");
+    setSelectedWalletId(null);
+    setShowSettleForm(false);
+    setEditingPaymentId(null);
+  };
+
   const handleSettle = async () => {
     const numAmount = parseFloat(paymentAmount);
     if (isNaN(numAmount) || numAmount <= 0) {
@@ -103,32 +123,72 @@ export default function DebtDetailScreen() {
       Alert.alert("Error", "Please select a wallet");
       return;
     }
-    if (!selectedCategoryId) {
-      Alert.alert("Error", "Please select a category");
-      return;
-    }
-    if (numAmount > debt.remaining_amount) {
-      Alert.alert("Error", `Amount cannot exceed remaining ${formatCurrency(debt.remaining_amount, { currency })}`);
+    // For new payments, amount cannot exceed remaining
+    // For editing, the old amount is reversed first so the max is remaining + oldAmount
+    const maxAmount = editingPaymentId
+      ? debt.remaining_amount + (payments.find((p) => p.id === editingPaymentId)?.amount ?? 0)
+      : debt.remaining_amount;
+    if (numAmount > maxAmount) {
+      Alert.alert("Error", `Amount cannot exceed ${formatCurrency(maxAmount, { currency })}`);
       return;
     }
 
     try {
-      await settleDebt({
-        debtId: debt.id,
-        walletId: selectedWalletId,
-        categoryId: selectedCategoryId,
-        amount: numAmount,
-        debtType: debt.type,
-        note: `Payment for ${debt.name}`,
-      });
-      setPaymentAmount("");
-      setSelectedWalletId(null);
-      setSelectedCategoryId(null);
-      setShowSettleForm(false);
-      Alert.alert("Success", "Payment recorded successfully");
-    } catch {
-      Alert.alert("Error", "Failed to record payment");
+      if (editingPaymentId) {
+        await editPayment({
+          transactionId: editingPaymentId,
+          debtId: debt.id,
+          walletId: selectedWalletId,
+          amount: numAmount,
+          debtType: debt.type,
+          note: `Payment for ${debt.name}`,
+        });
+        Alert.alert("Success", "Payment updated successfully");
+      } else {
+        await settleDebt({
+          debtId: debt.id,
+          walletId: selectedWalletId,
+          amount: numAmount,
+          debtType: debt.type,
+          note: `Payment for ${debt.name}`,
+        });
+        Alert.alert("Success", "Payment recorded successfully");
+      }
+      resetForm();
+    } catch (err) {
+      if (err instanceof InsufficientBalanceError) {
+        Alert.alert(
+          "Insufficient Balance",
+          `Your wallet only has ${formatCurrency(err.walletBalance, { currency })}. You need ${formatCurrency(err.requiredAmount, { currency })} to make this payment.`
+        );
+      } else {
+        Alert.alert("Error", editingPaymentId ? "Failed to update payment" : "Failed to record payment");
+      }
     }
+  };
+
+  const handleEditPayment = (payment: { id: number; amount: number; wallet_id: number }) => {
+    setEditingPaymentId(payment.id);
+    setPaymentAmount(payment.amount.toString());
+    setSelectedWalletId(payment.wallet_id);
+    setShowSettleForm(true);
+  };
+
+  const handleDeletePayment = (paymentId: number) => {
+    Alert.alert(
+      "Delete Payment",
+      "Are you sure? This will reverse the payment and restore the debt amount.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: () => {
+            deletePayment({ transactionId: paymentId, debtId: debt.id });
+          },
+        },
+      ]
+    );
   };
 
   const walletName = debt.wallet_id
@@ -138,7 +198,7 @@ export default function DebtDetailScreen() {
   return (
     <View className="flex-1 bg-background" style={{ paddingTop: insets.top }}>
       {/* Header */}
-      <View className="flex-row items-center justify-between px-5 pt-2 pb-4">
+      <View className="flex-row items-center justify-between px-5 pt-4 pb-4">
         <View className="flex-row items-center gap-3">
           <Pressable
             onPress={() => router.back()}
@@ -265,28 +325,27 @@ export default function DebtDetailScreen() {
         </View>
 
         {/* Record Payment section */}
-        {!debt.is_settled && (
-          <View className="mt-6">
-            {!showSettleForm ? (
-              <Pressable
-                onPress={() => setShowSettleForm(true)}
-                className="rounded-2xl p-4 items-center"
-                style={{ backgroundColor: isBorrow ? "#FEE2E2" : "#DCFCE7" }}
+        <View className="mt-6">
+          {!showSettleForm ? (
+            <Pressable
+              onPress={() => setShowSettleForm(true)}
+              className="rounded-2xl p-4 items-center"
+              style={{ backgroundColor: isBorrow ? "#FEE2E2" : "#DCFCE7" }}
+            >
+              <Text
+                className="text-base font-sans-semibold"
+                style={{ color: accentColor }}
               >
-                <Text
-                  className="text-base font-sans-semibold"
-                  style={{ color: accentColor }}
-                >
-                  {isBorrow ? "Record Payment" : "Record Repayment"}
-                </Text>
-              </Pressable>
-            ) : (
+                {isBorrow ? "Record Payment" : "Record Repayment"}
+              </Text>
+            </Pressable>
+          ) : (
               <View className="rounded-2xl p-4 border border-border gap-4">
                 <Text
                   className="text-lg text-foreground"
                   style={{ fontFamily: "Inter_700Bold" }}
                 >
-                  {isBorrow ? "Record Payment" : "Record Repayment"}
+                  {editingPaymentId ? "Edit Payment" : isBorrow ? "Record Payment" : "Record Repayment"}
                 </Text>
 
                 {/* Amount */}
@@ -317,86 +376,150 @@ export default function DebtDetailScreen() {
                   <Text className="text-base text-muted mb-2" style={{ fontFamily: "Inter_500Medium" }}>
                     Wallet
                   </Text>
-                  <View className="flex-row flex-wrap gap-2">
-                    {wallets.map((wallet) => (
-                      <Pressable
-                        key={wallet.id}
-                        onPress={() => setSelectedWalletId(wallet.id)}
-                        className="rounded-xl px-3 py-2 border"
-                        style={{
-                          borderColor: selectedWalletId === wallet.id ? wallet.color : colors.border,
-                          backgroundColor: selectedWalletId === wallet.id ? `${wallet.color}20` : "transparent",
-                        }}
-                      >
-                        <Text
-                          className="text-sm font-sans-medium"
-                          style={{
-                            color: selectedWalletId === wallet.id ? wallet.color : colors.foreground,
-                          }}
+                  <Pressable
+                    onPress={() =>
+                      router.push({
+                        pathname: "/(modals)/select-wallet",
+                        params: { context: "debt" },
+                      })
+                    }
+                    className="flex-row items-center rounded-xl border border-border px-3 py-3"
+                  >
+                    {selectedWallet ? (
+                      <>
+                        <View
+                          className="h-8 w-8 items-center justify-center rounded-full"
+                          style={{ backgroundColor: selectedWallet.color }}
                         >
-                          {wallet.name}
+                          <Feather
+                            name={selectedWallet.icon as any}
+                            size={16}
+                            color="rgba(0,0,0,0.6)"
+                          />
+                        </View>
+                        <View className="flex-1 ml-3">
+                          <Text className="text-base text-foreground font-sans-medium">
+                            {selectedWallet.name}
+                          </Text>
+                          <Text className="text-sm text-muted">
+                            {formatCurrency(selectedWallet.balance, { currency })}
+                          </Text>
+                        </View>
+                      </>
+                    ) : (
+                      <>
+                        <Feather name="credit-card" size={18} color={colors.muted} />
+                        <Text className="flex-1 text-base text-foreground ml-2" style={{ fontFamily: "Inter_500Medium" }}>
+                          Select a wallet
                         </Text>
-                      </Pressable>
-                    ))}
-                  </View>
-                </View>
+                      </>
+                    )}
+                    <Feather name="chevron-right" size={18} color={colors.muted} />
+                  </Pressable>
 
-                {/* Category */}
-                <View>
-                  <Text className="text-base text-muted mb-2" style={{ fontFamily: "Inter_500Medium" }}>
-                    Category
-                  </Text>
-                  <View className="flex-row flex-wrap gap-2">
-                    {relevantCategories.map((cat) => (
-                      <Pressable
-                        key={cat.id}
-                        onPress={() => setSelectedCategoryId(cat.id)}
-                        className="flex-row items-center rounded-xl px-3 py-2 border gap-2"
-                        style={{
-                          borderColor: selectedCategoryId === cat.id ? cat.color : colors.border,
-                          backgroundColor: selectedCategoryId === cat.id ? `${cat.color}20` : "transparent",
-                        }}
-                      >
-                        <Feather name={cat.icon as any} size={14} color={selectedCategoryId === cat.id ? cat.color : colors.muted} />
-                        <Text
-                          className="text-sm font-sans-medium"
-                          style={{
-                            color: selectedCategoryId === cat.id ? cat.color : colors.foreground,
-                          }}
-                        >
-                          {cat.name}
-                        </Text>
-                      </Pressable>
-                    ))}
-                  </View>
+                  {/* Balance check for borrowed debts */}
+                  {isBorrow && selectedWallet && (
+                    <View className="flex-row items-center gap-2 mt-2">
+                      <Feather
+                        name={walletBalance >= parseFloat(paymentAmount || "0") ? "check-circle" : "alert-circle"}
+                        size={14}
+                        color={walletBalance >= parseFloat(paymentAmount || "0") ? "#22C55E" : "#EF4444"}
+                      />
+                      <Text className="text-sm text-muted">
+                        Available: {formatCurrency(walletBalance, { currency })}
+                      </Text>
+                    </View>
+                  )}
                 </View>
 
                 {/* Actions */}
                 <View className="flex-row gap-3">
                   <Pressable
-                    onPress={() => {
-                      setShowSettleForm(false);
-                      setPaymentAmount("");
-                      setSelectedWalletId(null);
-                      setSelectedCategoryId(null);
-                    }}
+                    onPress={resetForm}
                     className="flex-1 rounded-xl py-3 items-center border border-border"
                   >
                     <Text className="text-base font-sans-medium text-muted">Cancel</Text>
                   </Pressable>
                   <Pressable
                     onPress={handleSettle}
-                    disabled={isSettling}
+                    disabled={isSettling || isEditing}
                     className="flex-1 rounded-xl py-3 items-center"
                     style={{ backgroundColor: accentColor }}
                   >
                     <Text className="text-base font-sans-semibold text-white">
-                      {isSettling ? "Saving..." : "Save"}
+                      {isSettling || isEditing ? "Saving..." : editingPaymentId ? "Update" : "Save"}
                     </Text>
                   </Pressable>
                 </View>
               </View>
             )}
+          </View>
+
+        {/* Payment History */}
+        {payments.length > 0 && (
+          <View className="mt-6">
+            <Text
+              className="text-lg text-foreground mb-3"
+              style={{ fontFamily: "Inter_700Bold" }}
+            >
+              Payment History
+            </Text>
+            <View className="rounded-2xl border border-border overflow-hidden">
+              {payments.map((payment, index) => {
+                const wallet = wallets.find((w) => w.id === payment.wallet_id);
+                return (
+                  <View
+                    key={payment.id}
+                    className={`px-4 py-3 ${index < payments.length - 1 ? "border-b border-border" : ""}`}
+                  >
+                    <View className="flex-row items-center justify-between">
+                      <View className="flex-row items-center gap-3 flex-1">
+                        {wallet ? (
+                          <View
+                            className="h-8 w-8 items-center justify-center rounded-full"
+                            style={{ backgroundColor: wallet.color }}
+                          >
+                            <Feather
+                              name={wallet.icon as any}
+                              size={14}
+                              color="rgba(0,0,0,0.6)"
+                            />
+                          </View>
+                        ) : (
+                          <View className="h-8 w-8 items-center justify-center rounded-full bg-muted">
+                            <Feather name="credit-card" size={14} color={colors.foreground} />
+                          </View>
+                        )}
+                        <View className="flex-1">
+                          <Text className="text-base text-foreground font-sans-medium">
+                            {formatCurrency(payment.amount, { currency })}
+                          </Text>
+                          <Text className="text-sm text-muted">
+                            {wallet?.name ?? "Unknown wallet"} · {dayjs(payment.created_at).format("MMM D, YYYY")}
+                          </Text>
+                        </View>
+                      </View>
+                      <View className="flex-row items-center gap-3">
+                        <Pressable
+                          onPress={() => handleEditPayment(payment)}
+                          hitSlop={8}
+                          className="active:opacity-70"
+                        >
+                          <Feather name="edit-2" size={18} color={colors.muted} />
+                        </Pressable>
+                        <Pressable
+                          onPress={() => handleDeletePayment(payment.id)}
+                          hitSlop={8}
+                          className="active:opacity-70"
+                        >
+                          <Feather name="trash-2" size={18} color={colors.expense} />
+                        </Pressable>
+                      </View>
+                    </View>
+                  </View>
+                );
+              })}
+            </View>
           </View>
         )}
 

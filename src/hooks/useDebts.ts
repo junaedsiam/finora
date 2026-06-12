@@ -7,7 +7,12 @@ import {
   updateDebt,
   deleteDebt,
 } from "@/repositories/debt.repository";
-import { settleDebtAtomic } from "@/services/debt.service";
+import {
+  settleDebtAtomic,
+  editDebtPaymentAtomic,
+  deleteDebtPaymentAtomic,
+  getDebtTransactions,
+} from "@/services/debt.service";
 import { useAccountStore } from "@/stores/account.store";
 import type { DebtRow } from "@/types/database";
 
@@ -94,7 +99,6 @@ export function useSettleDebt() {
     mutationFn: async (params: {
       debtId: number;
       walletId: number;
-      categoryId: number;
       amount: number;
       debtType: "borrow" | "lend";
       note?: string | null;
@@ -104,6 +108,58 @@ export function useSettleDebt() {
       qc.invalidateQueries({ queryKey: ["debts", activeAccountId] });
       qc.invalidateQueries({ queryKey: ["all-debts", activeAccountId] });
       qc.invalidateQueries({ queryKey: ["debt", vars.debtId] });
+      qc.invalidateQueries({ queryKey: ["debt-transactions", vars.debtId] });
+      qc.invalidateQueries({ queryKey: ["transactions", activeAccountId] });
+      qc.invalidateQueries({ queryKey: ["wallets", activeAccountId] });
+      qc.invalidateQueries({ queryKey: ["balance", activeAccountId] });
+    },
+  });
+}
+
+export function useDebtTransactions(debtId: number) {
+  return useQuery({
+    queryKey: ["debt-transactions", debtId],
+    queryFn: () => getDebtTransactions(debtId),
+    enabled: !!debtId,
+  });
+}
+
+export function useEditDebtPayment() {
+  const qc = useQueryClient();
+  const activeAccountId = useAccountStore((s) => s.activeAccountId);
+  return useMutation({
+    mutationFn: async (params: {
+      transactionId: number;
+      debtId: number;
+      walletId: number;
+      amount: number;
+      debtType: "borrow" | "lend";
+      note?: string | null;
+    }) =>
+      editDebtPaymentAtomic({ accountId: activeAccountId, ...params }),
+    onSuccess: (_, vars) => {
+      qc.invalidateQueries({ queryKey: ["debts", activeAccountId] });
+      qc.invalidateQueries({ queryKey: ["all-debts", activeAccountId] });
+      qc.invalidateQueries({ queryKey: ["debt", vars.debtId] });
+      qc.invalidateQueries({ queryKey: ["debt-transactions", vars.debtId] });
+      qc.invalidateQueries({ queryKey: ["transactions", activeAccountId] });
+      qc.invalidateQueries({ queryKey: ["wallets", activeAccountId] });
+      qc.invalidateQueries({ queryKey: ["balance", activeAccountId] });
+    },
+  });
+}
+
+export function useDeleteDebtPayment() {
+  const qc = useQueryClient();
+  const activeAccountId = useAccountStore((s) => s.activeAccountId);
+  return useMutation({
+    mutationFn: async (params: { transactionId: number; debtId: number }) =>
+      deleteDebtPaymentAtomic(params.transactionId, params.debtId),
+    onSuccess: (_, vars) => {
+      qc.invalidateQueries({ queryKey: ["debts", activeAccountId] });
+      qc.invalidateQueries({ queryKey: ["all-debts", activeAccountId] });
+      qc.invalidateQueries({ queryKey: ["debt", vars.debtId] });
+      qc.invalidateQueries({ queryKey: ["debt-transactions", vars.debtId] });
       qc.invalidateQueries({ queryKey: ["transactions", activeAccountId] });
       qc.invalidateQueries({ queryKey: ["wallets", activeAccountId] });
       qc.invalidateQueries({ queryKey: ["balance", activeAccountId] });

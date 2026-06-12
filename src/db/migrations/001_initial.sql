@@ -18,6 +18,7 @@ CREATE TABLE IF NOT EXISTS wallets (
   color TEXT NOT NULL,
   icon TEXT NOT NULL,
   is_excluded INTEGER NOT NULL DEFAULT 0,
+  sort_order INTEGER NOT NULL DEFAULT 0,
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
   updated_at TEXT NOT NULL DEFAULT (datetime('now')),
   FOREIGN KEY (account_id) REFERENCES accounts(id) ON DELETE CASCADE
@@ -27,9 +28,11 @@ CREATE TABLE IF NOT EXISTS categories (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   account_id INTEGER NOT NULL,
   name TEXT NOT NULL,
-  type TEXT NOT NULL CHECK (type IN ('income', 'expense', 'transfer')),
+  type TEXT NOT NULL CHECK (type IN ('income', 'expense')),
   icon TEXT NOT NULL,
   color TEXT NOT NULL,
+  parent_id INTEGER REFERENCES categories(id) ON DELETE CASCADE,
+  sort_order INTEGER DEFAULT 0,
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
   updated_at TEXT NOT NULL DEFAULT (datetime('now')),
   FOREIGN KEY (account_id) REFERENCES accounts(id) ON DELETE CASCADE
@@ -40,7 +43,7 @@ CREATE TABLE IF NOT EXISTS transactions (
   account_id INTEGER NOT NULL,
   wallet_id INTEGER NOT NULL,
   destination_wallet_id INTEGER,
-  category_id INTEGER NOT NULL,
+  category_id INTEGER,
   type TEXT NOT NULL CHECK (type IN ('income', 'expense', 'transfer')),
   amount REAL NOT NULL,
   note TEXT,
@@ -51,7 +54,7 @@ CREATE TABLE IF NOT EXISTS transactions (
   FOREIGN KEY (account_id) REFERENCES accounts(id) ON DELETE CASCADE,
   FOREIGN KEY (wallet_id) REFERENCES wallets(id) ON DELETE CASCADE,
   FOREIGN KEY (destination_wallet_id) REFERENCES wallets(id) ON DELETE SET NULL,
-  FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE CASCADE,
+  FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE SET NULL,
   FOREIGN KEY (recurring_id) REFERENCES recurring(id) ON DELETE SET NULL
 );
 
@@ -116,7 +119,7 @@ CREATE INDEX IF NOT EXISTS idx_recurring_next_due ON recurring(next_due_date);
 CREATE INDEX IF NOT EXISTS idx_wallets_account ON wallets(account_id);
 CREATE INDEX IF NOT EXISTS idx_budgets_account ON budgets(account_id);
 CREATE INDEX IF NOT EXISTS idx_debts_account ON debts(account_id);
-CREATE INDEX IF NOT EXISTS idx_categories_account ON categories(account_id);
+CREATE INDEX IF NOT EXISTS idx_categories_account ON categories(account_id, type, parent_id);
 
 -- Trigger to auto-update updated_at
 CREATE TRIGGER IF NOT EXISTS tr_wallets_updated AFTER UPDATE ON wallets

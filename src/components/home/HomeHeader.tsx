@@ -28,7 +28,7 @@ export function HomeHeader() {
   });
 
   return (
-    <View className="flex-row items-center justify-between px-5 pt-2 pb-4">
+      <View className="flex-row items-center justify-between px-5 pt-4 pb-4">
       <View className="flex-row items-center gap-3">
         <View
           className="h-12 w-12 rounded-full items-center justify-center"

@@ -18,6 +18,7 @@ export function BalanceCard() {
 
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [flowMode, setFlowMode] = useState<"monthly" | "overall">("monthly");
 
   const { data: wallets = [] } = useWallets();
   const { data: accounts = [] } = useAccounts();
@@ -39,15 +40,21 @@ export function BalanceCard() {
 
     for (const tx of transactions) {
       if (tx.status !== "confirmed") continue;
-      const txDate = dayjs(tx.created_at);
-      if (txDate.isBefore(monthStart) || txDate.isAfter(monthEnd)) continue;
+
+      // Skip debt payments (no category) from income/expense analytics
+      if (tx.category_id === null) continue;
+
+      if (flowMode === "monthly") {
+        const txDate = dayjs(tx.created_at);
+        if (txDate.isBefore(monthStart) || txDate.isAfter(monthEnd)) continue;
+      }
 
       if (tx.type === "income") income += tx.amount;
       else if (tx.type === "expense") expense += tx.amount;
     }
 
     return { totalIncome: income, totalExpense: expense };
-  }, [transactions]);
+  }, [transactions, flowMode]);
 
   const handleAccountSelect = (id: number) => {
     setActiveAccountId(id);
@@ -111,8 +118,8 @@ export function BalanceCard() {
         />
 
         {/* Income & Expense */}
-        <View className="flex-row gap-8">
-          <View>
+        <View className="flex-row items-start gap-4">
+          <View className="flex-1 min-w-0">
             <View className="flex-row items-center gap-1 mb-1">
               <Text
                 className="font-sans text-base text-white"
@@ -122,11 +129,11 @@ export function BalanceCard() {
               </Text>
               <Feather name="arrow-up-right" size={16} color="#4ADE80" />
             </View>
-            <Text className="text-lg text-white font-sans-semibold">
+            <Text className="text-lg text-white font-sans-semibold" numberOfLines={1} ellipsizeMode="tail">
               {visible ? formatCurrency(totalIncome, { currency }) : "••••"}
             </Text>
           </View>
-          <View>
+          <View className="flex-1 min-w-0">
             <View className="flex-row items-center gap-1 mb-1">
               <Text
                 className="font-sans text-base text-white"
@@ -136,9 +143,25 @@ export function BalanceCard() {
               </Text>
               <Feather name="arrow-down-right" size={16} color="#FF6B6B" />
             </View>
-            <Text className="text-lg text-white font-sans-semibold">
+            <Text className="text-lg text-white font-sans-semibold" numberOfLines={1} ellipsizeMode="tail">
               {visible ? formatCurrency(totalExpense, { currency }) : "••••"}
             </Text>
+          </View>
+          <View className="shrink-0">
+            <Pressable
+              onPress={() => setFlowMode(flowMode === "monthly" ? "overall" : "monthly")}
+              className="flex-row items-center gap-1"
+              hitSlop={8}
+            >
+              <Feather
+                name={flowMode === "monthly" ? "check-square" : "square"}
+                size={14}
+                color="rgba(255,255,255,0.7)"
+              />
+              <Text className="text-xs text-white font-sans-medium" style={{ opacity: 0.7 }}>
+                Monthly
+              </Text>
+            </Pressable>
           </View>
         </View>
       </LinearGradient>

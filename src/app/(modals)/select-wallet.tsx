@@ -8,6 +8,7 @@ import {
   useTransactionFormStore,
   type PickerItem,
 } from "@/stores/transaction-form.store";
+import { useWalletPickerStore } from "@/stores/wallet-picker.store";
 import { useWallets } from "@/hooks/useWallets";
 import { useActiveCurrency } from "@/hooks/useActiveCurrency";
 import { formatCurrency } from "@/utils/currency";
@@ -16,12 +17,17 @@ export default function SelectWalletScreen() {
   const router = useRouter();
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { field } = useLocalSearchParams<{ field: "from" | "to" }>();
+  const { field, context } = useLocalSearchParams<{
+    field?: "from" | "to";
+    context?: "transaction" | "debt";
+  }>();
   const { fromWallet, toWallet, setFromWallet, setToWallet } =
     useTransactionFormStore();
+  const { setSelectedWallet } = useWalletPickerStore();
   const { data: wallets = [] } = useWallets();
   const currency = useActiveCurrency();
 
+  const isTransaction = !context || context === "transaction";
   const isTo = field === "to";
 
   const pickerItems: PickerItem[] = wallets.map((w) => ({
@@ -32,10 +38,23 @@ export default function SelectWalletScreen() {
     color: w.color,
   }));
 
+  const handleSelect = (item: PickerItem) => {
+    if (isTransaction) {
+      if (isTo) {
+        setToWallet(item);
+      } else {
+        setFromWallet(item);
+      }
+    } else {
+      setSelectedWallet(item);
+    }
+    router.back();
+  };
+
   return (
     <View className="flex-1 bg-background" style={{ paddingTop: insets.top }}>
       {/* Header */}
-      <View className="flex-row items-center px-5 pt-2 pb-4 gap-3">
+      <View className="flex-row items-center px-5 pt-4 pb-4 gap-3">
         <Pressable
           onPress={() => router.back()}
           hitSlop={8}
@@ -44,7 +63,7 @@ export default function SelectWalletScreen() {
           <Feather name="arrow-left" size={24} color={colors.foreground} />
         </Pressable>
         <Text className="flex-1 text-xl font-sans-bold text-foreground">
-          {isTo ? "Select Destination Wallet" : "Select Wallet"}
+          {isTransaction && isTo ? "Select Destination Wallet" : "Select Wallet"}
         </Text>
       </View>
 
@@ -57,18 +76,15 @@ export default function SelectWalletScreen() {
           </View>
         ) : (
           pickerItems.map((item) => {
-            const isSelected = isTo ? toWallet?.id === item.id : fromWallet?.id === item.id;
+            const isSelected = isTransaction
+              ? isTo
+                ? toWallet?.id === item.id
+                : fromWallet?.id === item.id
+              : false;
             return (
               <Pressable
                 key={item.id}
-                onPress={() => {
-                  if (isTo) {
-                    setToWallet(item);
-                  } else {
-                    setFromWallet(item);
-                  }
-                  router.back();
-                }}
+                onPress={() => handleSelect(item)}
                 className="flex-row items-center py-4"
                 style={({ pressed }) => ({
                   opacity: pressed ? 0.7 : 1,

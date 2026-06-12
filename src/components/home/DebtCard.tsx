@@ -29,6 +29,7 @@ export function DebtCard({
   const paid = totalAmount - remainingAmount;
   const percentage = Math.round((paid / totalAmount) * 100);
   const accentColor = isBorrowed ? colors.expense : colors.income;
+  const bgColor = isBorrowed ? "#FCA5A5" : "#86EFAC";
 
   return (
     <Pressable
@@ -40,8 +41,8 @@ export function DebtCard({
       <View className="flex-row items-center mb-2">
         <IconCircle
           icon="user"
-          bgColor={isBorrowed ? "#FEE2E2" : "#DCFCE7"}
-          iconColor={accentColor}
+          bgColor={bgColor}
+          iconColor="#222222"
           size={40}
         />
         <View className="flex-1 ml-3">
@@ -54,11 +55,11 @@ export function DebtCard({
         </View>
         <View
           className="rounded-full px-2.5 py-1"
-          style={{ backgroundColor: isBorrowed ? "#FEE2E2" : "#DCFCE7" }}
+          style={{ backgroundColor: bgColor }}
         >
           <Text
             className="text-xs font-sans-bold uppercase"
-            style={{ color: accentColor }}
+            style={{ color: "#222222" }}
           >
             {type}
           </Text>
@@ -77,7 +78,7 @@ export function DebtCard({
         </Text>
         <Text
           className="text-base font-sans-bold"
-          style={{ color: accentColor }}
+          style={{ color: "#222222" }}
         >
           {percentage}%
         </Text>

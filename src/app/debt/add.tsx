@@ -1,5 +1,14 @@
 import { useState, useEffect } from "react";
-import { View, Text, TextInput, ScrollView, Pressable, Alert } from "react-native";
+import {
+  View,
+  Text,
+  TextInput,
+  ScrollView,
+  Pressable,
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+} from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Feather from "@expo/vector-icons/Feather";
@@ -76,7 +85,8 @@ export default function AddDebtScreen() {
           type: debtType,
           originalAmount: numAmount,
           remainingAmount: existingDebt
-            ? existingDebt.remaining_amount + (numAmount - existingDebt.original_amount)
+            ? existingDebt.remaining_amount +
+              (numAmount - existingDebt.original_amount)
             : numAmount,
           dueDate: dueDate.toISOString(),
           walletId: selectedWalletId,
@@ -93,7 +103,10 @@ export default function AddDebtScreen() {
       }
       router.back();
     } catch {
-      Alert.alert("Error", isEditing ? "Failed to update debt" : "Failed to create debt");
+      Alert.alert(
+        "Error",
+        isEditing ? "Failed to update debt" : "Failed to create debt",
+      );
     }
   };
 
@@ -115,124 +128,148 @@ export default function AddDebtScreen() {
         </View>
       </View>
 
-      <ScrollView className="flex-1 px-5" keyboardShouldPersistTaps="handled">
-        {/* Type tabs */}
-        <View className="mt-4">
-          <TabPill
-            options={TYPE_TABS}
-            activeIndex={activeType}
-            onChange={setActiveType}
-          />
-        </View>
-
-        {/* Person name */}
-        <View className="mt-6">
-          <Text
-            className="text-base text-muted mb-2"
-            style={{ fontFamily: "Inter_500Medium" }}
-          >
-            {activeType === 0 ? "Lender Name" : "Borrower Name"}
-          </Text>
-          <View className="flex-row items-center rounded-xl border border-border px-3 py-4">
-            <Feather name="user" size={18} color={colors.muted} />
-            <TextInput
-              value={personName}
-              onChangeText={setPersonName}
-              placeholder="Enter name"
-              placeholderTextColor={colors.muted}
-              className="flex-1 text-base text-foreground ml-2"
-              style={{ fontFamily: "Inter_500Medium", padding: 0 }}
+      <KeyboardAvoidingView
+        behavior="height"
+        className="flex-1"
+        keyboardVerticalOffset={Platform.OS === "ios" ? 100 : 0}
+      >
+        <ScrollView className="flex-1 px-5" keyboardShouldPersistTaps="handled">
+          {/* Type tabs */}
+          <View className="mt-4">
+            <TabPill
+              options={TYPE_TABS}
+              activeIndex={activeType}
+              onChange={setActiveType}
             />
           </View>
-        </View>
 
-        {/* Amount */}
-        <View className="mt-4">
-          <Text
-            className="text-base text-muted mb-2"
-            style={{ fontFamily: "Inter_500Medium" }}
-          >
-            Amount
-          </Text>
-          <View className="flex-row items-center rounded-xl border border-border px-3 py-4">
-            <Feather name="dollar-sign" size={18} color={colors.muted} />
-            <TextInput
-              value={amount}
-              onChangeText={(text) => {
-                const cleaned = text.replace(/[^0-9.]/g, "");
-                if ((cleaned.match(/\./g) || []).length <= 1)
-                  setAmount(cleaned);
-              }}
-              placeholder="0.00"
-              placeholderTextColor={colors.muted}
-              keyboardType="decimal-pad"
-              className="flex-1 text-base text-foreground ml-2"
-              style={{ fontFamily: "Inter_500Medium", padding: 0 }}
-            />
-          </View>
-        </View>
-
-        {/* Due date */}
-        <View className="mt-4">
-          <Text
-            className="text-base text-muted mb-2"
-            style={{ fontFamily: "Inter_500Medium" }}
-          >
-            Due Date
-          </Text>
-          <Pressable
-            onPress={() => setDatePickerOpen(true)}
-            className="flex-row items-center rounded-xl border border-border px-3 py-4"
-          >
-            <Feather name="calendar" size={18} color={colors.muted} />
-            <Text className="flex-1 text-base text-foreground ml-2" style={{ fontFamily: "Inter_500Medium" }}>
-              {formatDate(dueDate)}
+          {/* Person name */}
+          <View className="mt-6">
+            <Text
+              className="mb-2 text-base text-muted"
+              style={{ fontFamily: "Inter_500Medium" }}
+            >
+              {activeType === 0 ? "Lender Name" : "Borrower Name"}
             </Text>
-            <Feather name="chevron-right" size={18} color={colors.muted} />
-          </Pressable>
-        </View>
+            <View className="flex-row items-center px-3 py-4 border rounded-xl border-border">
+              <Feather name="user" size={18} color={colors.muted} />
+              <TextInput
+                value={personName}
+                onChangeText={setPersonName}
+                placeholder="Enter name"
+                placeholderTextColor={colors.muted}
+                className="flex-1 ml-2 text-base text-foreground"
+                style={{ fontFamily: "Inter_500Medium", padding: 0 }}
+              />
+            </View>
+          </View>
 
-        {/* Wallet */}
-        <View className="mt-4">
-          <Text
-            className="text-base text-muted mb-2"
-            style={{ fontFamily: "Inter_500Medium" }}
-          >
-            Wallet (optional)
-          </Text>
-          <View className="flex-row flex-wrap gap-2">
-            {wallets.map((wallet) => (
-              <Pressable
-                key={wallet.id}
-                onPress={() => setSelectedWalletId(wallet.id)}
-                className="rounded-xl px-3 py-2 border"
-                style={{
-                  borderColor: selectedWalletId === wallet.id ? wallet.color : colors.border,
-                  backgroundColor: selectedWalletId === wallet.id ? `${wallet.color}20` : "transparent",
+          {/* Amount */}
+          <View className="mt-4">
+            <Text
+              className="mb-2 text-base text-muted"
+              style={{ fontFamily: "Inter_500Medium" }}
+            >
+              Amount
+            </Text>
+            <View className="flex-row items-center px-3 py-4 border rounded-xl border-border">
+              <Feather name="dollar-sign" size={18} color={colors.muted} />
+              <TextInput
+                value={amount}
+                onChangeText={(text) => {
+                  const cleaned = text.replace(/[^0-9.]/g, "");
+                  if ((cleaned.match(/\./g) || []).length <= 1)
+                    setAmount(cleaned);
                 }}
+                placeholder="0.00"
+                placeholderTextColor={colors.muted}
+                keyboardType="decimal-pad"
+                className="flex-1 ml-2 text-base text-foreground"
+                style={{ fontFamily: "Inter_500Medium", padding: 0 }}
+              />
+            </View>
+          </View>
+
+          {/* Due date */}
+          <View className="mt-4">
+            <Text
+              className="mb-2 text-base text-muted"
+              style={{ fontFamily: "Inter_500Medium" }}
+            >
+              Due Date
+            </Text>
+            <Pressable
+              onPress={() => setDatePickerOpen(true)}
+              className="flex-row items-center px-3 py-4 border rounded-xl border-border"
+            >
+              <Feather name="calendar" size={18} color={colors.muted} />
+              <Text
+                className="flex-1 ml-2 text-base text-foreground"
+                style={{ fontFamily: "Inter_500Medium" }}
               >
-                <Text
-                  className="text-sm font-sans-medium"
+                {formatDate(dueDate)}
+              </Text>
+              <Feather name="chevron-right" size={18} color={colors.muted} />
+            </Pressable>
+          </View>
+
+          {/* Wallet */}
+          <View className="mt-4">
+            <Text
+              className="mb-2 text-base text-muted"
+              style={{ fontFamily: "Inter_500Medium" }}
+            >
+              Wallet (optional)
+            </Text>
+            <View className="flex-row flex-wrap gap-2">
+              {wallets.map((wallet) => (
+                <Pressable
+                  key={wallet.id}
+                  onPress={() => setSelectedWalletId(wallet.id)}
+                  className="px-3 py-2 border rounded-xl"
                   style={{
-                    color: selectedWalletId === wallet.id ? wallet.color : colors.foreground,
+                    borderColor:
+                      selectedWalletId === wallet.id
+                        ? wallet.color
+                        : colors.border,
+                    backgroundColor:
+                      selectedWalletId === wallet.id
+                        ? `${wallet.color}20`
+                        : "transparent",
                   }}
                 >
-                  {wallet.name}
-                </Text>
-              </Pressable>
-            ))}
+                  <Text
+                    className="text-sm font-sans-medium"
+                    style={{
+                      color:
+                        selectedWalletId === wallet.id
+                          ? wallet.color
+                          : colors.foreground,
+                    }}
+                  >
+                    {wallet.name}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
           </View>
-        </View>
 
-        {/* Submit */}
-        <View className="mt-8 pb-8">
-          <Button
-            label={isSubmitting ? "Saving..." : isEditing ? "Update Debt" : "Add Debt"}
-            onPress={handleSubmit}
-            disabled={isSubmitting}
-          />
-        </View>
-      </ScrollView>
+          {/* Submit */}
+          <View className="pb-8 mt-8">
+            <Button
+              label={
+                isSubmitting
+                  ? "Saving..."
+                  : isEditing
+                    ? "Update Debt"
+                    : "Add Debt"
+              }
+              onPress={handleSubmit}
+              disabled={isSubmitting}
+            />
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
 
       <DatePicker
         modal
