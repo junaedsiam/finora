@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { View, Text, ScrollView, Pressable } from "react-native";
+import { View, Text, ScrollView, Pressable, Alert } from "react-native";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Feather from "@expo/vector-icons/Feather";
@@ -8,91 +8,15 @@ import { IconCircle } from "@/components/ui/IconCircle";
 import { formatCurrency } from "@/utils/currency";
 import { useActiveCurrency } from "@/hooks/useActiveCurrency";
 import { useColors } from "@/constants/colors";
+import {
+  useRecurringList,
+  useDeleteRecurring,
+} from "@/hooks/useRecurring";
 
 const TABS = ["Income", "Expense"];
 
-type MockRecurring = {
-  id: number;
-  name: string;
-  type: "income" | "expense";
-  amount: number;
-  frequency: "daily" | "weekly" | "monthly" | "yearly";
-  nextDueDate: string;
-  categoryIcon: React.ComponentProps<typeof Feather>["name"];
-  categoryColor: string;
-  isActive: boolean;
-};
-
-const MOCK_RECURRING: MockRecurring[] = [
-  {
-    id: 1,
-    name: "Monthly Salary",
-    type: "income",
-    amount: 5000,
-    frequency: "monthly",
-    nextDueDate: "May 01, 2026",
-    categoryIcon: "briefcase",
-    categoryColor: "#22C55E",
-    isActive: true,
-  },
-  {
-    id: 2,
-    name: "Internet Bill",
-    type: "expense",
-    amount: 20,
-    frequency: "monthly",
-    nextDueDate: "Apr 24, 2026",
-    categoryIcon: "wifi",
-    categoryColor: "#5EEAD4",
-    isActive: true,
-  },
-  {
-    id: 3,
-    name: "Daily Groceries",
-    type: "expense",
-    amount: 5.49,
-    frequency: "daily",
-    nextDueDate: "Apr 20, 2026",
-    categoryIcon: "shopping-bag",
-    categoryColor: "#FDBA74",
-    isActive: true,
-  },
-  {
-    id: 4,
-    name: "Gym Membership",
-    type: "expense",
-    amount: 45,
-    frequency: "monthly",
-    nextDueDate: "May 05, 2026",
-    categoryIcon: "heart",
-    categoryColor: "#F87171",
-    isActive: true,
-  },
-  {
-    id: 5,
-    name: "Freelance Payment",
-    type: "income",
-    amount: 1200,
-    frequency: "monthly",
-    nextDueDate: "May 15, 2026",
-    categoryIcon: "dollar-sign",
-    categoryColor: "#3B82F6",
-    isActive: false,
-  },
-  {
-    id: 6,
-    name: "Netflix Subscription",
-    type: "expense",
-    amount: 15.99,
-    frequency: "monthly",
-    nextDueDate: "Apr 28, 2026",
-    categoryIcon: "tv",
-    categoryColor: "#E11D48",
-    isActive: true,
-  },
-];
-
-function formatFrequency(freq: string): string {
+function formatFrequency(freq: string | undefined | null): string {
+  if (!freq) return "Unknown";
   return freq.charAt(0).toUpperCase() + freq.slice(1);
 }
 
@@ -103,9 +27,29 @@ export default function RecurringListScreen() {
   const currency = useActiveCurrency();
   const [activeTab, setActiveTab] = useState(0);
 
-  const filtered = MOCK_RECURRING.filter((r) =>
+  const { data: recurringList = [], isLoading } = useRecurringList();
+  const { mutate: deleteRecurring } = useDeleteRecurring();
+
+  // Safety: ensure recurringList is an array
+  const safeRecurringList = Array.isArray(recurringList) ? recurringList : [];
+  const filtered = safeRecurringList.filter((r) =>
     activeTab === 0 ? r.type === "income" : r.type === "expense"
   );
+
+  const handleDelete = (id: number) => {
+    Alert.alert(
+      "Delete Recurring",
+      "Are you sure? This will also delete any pending transactions from this recurring.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: () => deleteRecurring(id),
+        },
+      ]
+    );
+  };
 
   return (
     <View className="flex-1 bg-background" style={{ paddingTop: insets.top }}>
@@ -144,19 +88,25 @@ export default function RecurringListScreen() {
 
         {/* Recurring list */}
         <View className="gap-3 mt-4 pb-8">
+          {isLoading && (
+            <View className="items-center py-12">
+              <Text className="text-muted">Loading...</Text>
+            </View>
+          )}
           {filtered.map((item) => {
             const isIncome = item.type === "income";
             return (
               <Pressable
                 key={item.id}
                 onPress={() => router.push(`/recurring/${item.id}`)}
+                onLongPress={() => handleDelete(item.id)}
                 className="flex-row items-center rounded-2xl p-4 border border-border bg-background"
                 style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
               >
                 <IconCircle
-                  icon={item.categoryIcon}
-                  bgColor={item.categoryColor}
-                  iconColor="#FFFFFF"
+                  icon={isIncome ? "arrow-up-right" : "arrow-down-right"}
+                  bgColor={isIncome ? "#DCFCE7" : "#FEE2E2"}
+                  iconColor={isIncome ? colors.income : colors.expense}
                   size={44}
                 />
                 <View className="flex-1 ml-3">
@@ -165,9 +115,9 @@ export default function RecurringListScreen() {
                       className="text-base text-foreground"
                       style={{ fontFamily: "Inter_600SemiBold" }}
                     >
-                      {item.name}
+                      {item.note || formatFrequency(item.frequency)}
                     </Text>
-                    {!item.isActive && (
+                    {!item.is_active && (
                       <View className="rounded-full px-2 py-0.5 bg-surface">
                         <Text className="text-sm text-muted" style={{ fontFamily: "Inter_500Medium" }}>
                           Paused
@@ -176,7 +126,7 @@ export default function RecurringListScreen() {
                     )}
                   </View>
                   <Text className="text-sm text-muted mt-0.5">
-                    Next: {item.nextDueDate} - {formatFrequency(item.frequency)}
+                    Next: {item.next_due_date} - {formatFrequency(item.frequency)}
                   </Text>
                 </View>
                 <Text
@@ -191,7 +141,7 @@ export default function RecurringListScreen() {
               </Pressable>
             );
           })}
-          {filtered.length === 0 && (
+          {!isLoading && filtered.length === 0 && (
             <View className="items-center py-12">
               <Feather name="inbox" size={48} color={colors.muted} />
               <Text className="text-base text-muted mt-3">

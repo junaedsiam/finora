@@ -1,27 +1,27 @@
-import { useState } from "react";
-import { View, Text, TextInput, ScrollView, Pressable } from "react-native";
+import { useState, useEffect, useRef } from "react";
+import { View, Text, TextInput, ScrollView, Pressable, Alert } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Feather from "@expo/vector-icons/Feather";
+import BottomSheet from "@gorhom/bottom-sheet";
 import DatePicker from "react-native-date-picker";
 import { TabPill } from "@/components/ui/TabPill";
 import { DropdownField } from "@/components/ui/DropdownField";
 import { Button } from "@/components/ui/Button";
 import { useColors } from "@/constants/colors";
+import { useRecurringFormStore } from "@/stores/recurring-form.store";
+import {
+  useCreateRecurring,
+  useUpdateRecurring,
+  useRecurring,
+} from "@/hooks/useRecurring";
+import { useCategories } from "@/hooks/useCategories";
+import { useWallets } from "@/hooks/useWallets";
+import { FrequencyBottomSheet } from "@/components/forms/FrequencyBottomSheet";
 
 const TYPE_TABS = ["Income", "Expense"];
-const FREQUENCY_OPTIONS = ["Daily", "Weekly", "Monthly", "Yearly"];
-const DEMO_CATEGORIES = [
-  "Salary",
-  "Bills",
-  "Food",
-  "Health",
-  "Entertainment",
-  "Transport",
-  "Freelance",
-  "Shopping",
-];
-const DEMO_WALLETS = ["Cash", "Bank Account", "Credit Card", "Savings"];
+const FREQUENCY_OPTIONS = ["daily", "weekly", "monthly", "yearly"] as const;
+const FREQUENCY_LABELS = ["Daily", "Weekly", "Monthly", "Yearly"];
 
 function formatDate(d: Date): string {
   return d.toLocaleDateString("en-US", {
@@ -31,6 +31,10 @@ function formatDate(d: Date): string {
   });
 }
 
+function dateToISO(d: Date): string {
+  return d.toISOString().split("T")[0];
+}
+
 export default function AddRecurringScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -38,15 +42,142 @@ export default function AddRecurringScreen() {
   const isEditing = !!editId;
   const colors = useColors();
 
+  const { category, wallet, setCategory, setWallet, reset } = useRecurringFormStore();
+  const { mutateAsync: createRecurring } = useCreateRecurring();
+  const { mutateAsync: updateRecurring } = useUpdateRecurring();
+  const { data: existingRecurring, isLoading: isLoadingRecurring } = useRecurring(
+    isEditing ? parseInt(editId) : 0
+  );
+  const { data: categories = [] } = useCategories();
+  const { data: wallets = [] } = useWallets();
+
   const [activeType, setActiveType] = useState(1);
   const [name, setName] = useState("");
   const [amount, setAmount] = useState("");
   const [frequencyIndex, setFrequencyIndex] = useState(2);
-  const [categoryIndex, setCategoryIndex] = useState(0);
-  const [walletIndex, setWalletIndex] = useState(0);
   const [startDate, setStartDate] = useState(new Date());
   const [datePickerOpen, setDatePickerOpen] = useState(false);
   const [note, setNote] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const frequencySheetRef = useRef<BottomSheet>(null);
+
+  const currentType = activeType === 0 ? "income" : "expense";
+
+  // Populate form when editing
+  useEffect(() => {
+    if (!isEditing || !existingRecurring) return;
+
+    // Safety: if data is an array (shouldn't happen after query key fix), take first element
+    const recurringData = Array.isArray(existingRecurring) ? existingRecurring[0] : existingRecurring;
+    if (!recurringData) return;
+
+    setName(recurringData.note ?? "");
+    setAmount(recurringData.amount.toString());
+    const freqIndex = recurringData.frequency
+      ? FREQUENCY_OPTIONS.indexOf(recurringData.frequency)
+      : 2;
+    setFrequencyIndex(freqIndex >= 0 ? freqIndex : 2);
+    setStartDate(new Date(recurringData.start_date));
+    setNote(recurringData.note ?? "");
+    setActiveType(recurringData.type === "income" ? 0 : 1);
+
+    // Set category in store
+    const cat = categories.find((c) => c.id === existingRecurring.category_id);
+    if (cat) {
+      setCategory({
+        id: cat.id.toString(),
+        name: cat.name,
+        icon: cat.icon,
+        color: cat.color,
+      });
+    }
+
+    // Set wallet in store
+    const w = wallets.find((w) => w.id === existingRecurring.wallet_id);
+    if (w) {
+      setWallet({
+        id: w.id.toString(),
+        name: w.name,
+        icon: w.icon,
+        color: w.color,
+      });
+    }
+  }, [isEditing, existingRecurring, categories, wallets]);
+
+  // Reset store on unmount
+  useEffect(() => {
+    return () => reset();
+  }, []);
+
+  const handleSubmit = async () => {
+    const numAmount = parseFloat(amount);
+    if (!name.trim()) {
+      Alert.alert("Error", "Please enter a name");
+      return;
+    }
+    if (isNaN(numAmount) || numAmount <= 0) {
+      Alert.alert("Error", "Please enter a valid amount");
+      return;
+    }
+    if (!category) {
+      Alert.alert("Error", "Please select a category");
+      return;
+    }
+    if (!wallet) {
+      Alert.alert("Error", "Please select a wallet");
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const categoryId = parseInt(category.id);
+      const walletId = parseInt(wallet.id);
+      const frequency = FREQUENCY_OPTIONS[frequencyIndex];
+      const startDateStr = dateToISO(startDate);
+
+      const noteValue = name.trim() ? name.trim() : null;
+
+      if (isEditing && existingRecurring) {
+        await updateRecurring({
+          id: existingRecurring.id,
+          walletId,
+          categoryId,
+          type: currentType,
+          amount: numAmount,
+          frequency,
+          nextDueDate: startDateStr,
+          startDate: startDateStr,
+          note: noteValue,
+        });
+      } else {
+        await createRecurring({
+          walletId,
+          categoryId,
+          type: currentType,
+          amount: numAmount,
+          frequency,
+          nextDueDate: startDateStr,
+          startDate: startDateStr,
+          note: noteValue,
+        });
+      }
+
+      reset();
+      router.back();
+    } catch (err) {
+      Alert.alert("Error", isEditing ? "Failed to update recurring" : "Failed to create recurring");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  if (isEditing && isLoadingRecurring) {
+    return (
+      <View className="flex-1 items-center justify-center bg-background">
+        <Text className="text-muted">Loading...</Text>
+      </View>
+    );
+  }
 
   return (
     <View className="flex-1 bg-background" style={{ paddingTop: insets.top }}>
@@ -134,10 +265,8 @@ export default function AddRecurringScreen() {
           <DropdownField
             icon="repeat"
             label="Select frequency"
-            value={FREQUENCY_OPTIONS[frequencyIndex]}
-            onPress={() =>
-              setFrequencyIndex((i) => (i + 1) % FREQUENCY_OPTIONS.length)
-            }
+            value={FREQUENCY_LABELS[frequencyIndex]}
+            onPress={() => frequencySheetRef.current?.snapToIndex(0)}
             flex={false}
           />
         </View>
@@ -153,9 +282,12 @@ export default function AddRecurringScreen() {
           <DropdownField
             icon="grid"
             label="Select category"
-            value={DEMO_CATEGORIES[categoryIndex]}
+            value={category?.name}
             onPress={() =>
-              setCategoryIndex((i) => (i + 1) % DEMO_CATEGORIES.length)
+              router.push({
+                pathname: "/(modals)/select-category",
+                params: { type: currentType, context: "recurring" },
+              })
             }
             flex={false}
           />
@@ -172,9 +304,12 @@ export default function AddRecurringScreen() {
           <DropdownField
             icon="credit-card"
             label="Select wallet"
-            value={DEMO_WALLETS[walletIndex]}
+            value={wallet?.name}
             onPress={() =>
-              setWalletIndex((i) => (i + 1) % DEMO_WALLETS.length)
+              router.push({
+                pathname: "/(modals)/select-wallet",
+                params: { field: "to", context: "recurring" },
+              })
             }
             flex={false}
           />
@@ -220,9 +355,28 @@ export default function AddRecurringScreen() {
 
         {/* Submit */}
         <View className="mt-8 pb-8">
-          <Button label={isEditing ? "Update Recurring" : "Add Recurring"} />
+          <Button
+            label={
+              isSubmitting
+                ? "Saving..."
+                : isEditing
+                ? "Update Recurring"
+                : "Add Recurring"
+            }
+            onPress={handleSubmit}
+            disabled={isSubmitting}
+          />
         </View>
       </ScrollView>
+
+      <FrequencyBottomSheet
+        sheetRef={frequencySheetRef}
+        selectedValue={FREQUENCY_OPTIONS[frequencyIndex]}
+        onSelect={(value) => {
+          const idx = FREQUENCY_OPTIONS.indexOf(value as typeof FREQUENCY_OPTIONS[number]);
+          if (idx >= 0) setFrequencyIndex(idx);
+        }}
+      />
 
       <DatePicker
         modal

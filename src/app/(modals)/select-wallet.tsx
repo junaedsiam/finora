@@ -9,6 +9,7 @@ import {
   type PickerItem,
 } from "@/stores/transaction-form.store";
 import { useWalletPickerStore } from "@/stores/wallet-picker.store";
+import { useRecurringFormStore } from "@/stores/recurring-form.store";
 import { useWallets } from "@/hooks/useWallets";
 import { useActiveCurrency } from "@/hooks/useActiveCurrency";
 import { formatCurrency } from "@/utils/currency";
@@ -19,15 +20,17 @@ export default function SelectWalletScreen() {
   const insets = useSafeAreaInsets();
   const { field, context } = useLocalSearchParams<{
     field?: "from" | "to";
-    context?: "transaction" | "debt";
+    context?: "transaction" | "debt" | "recurring";
   }>();
   const { fromWallet, toWallet, setFromWallet, setToWallet } =
     useTransactionFormStore();
   const { setSelectedWallet } = useWalletPickerStore();
+  const recurringStore = useRecurringFormStore();
   const { data: wallets = [] } = useWallets();
   const currency = useActiveCurrency();
 
   const isTransaction = !context || context === "transaction";
+  const isRecurring = context === "recurring";
   const isTo = field === "to";
 
   const pickerItems: PickerItem[] = wallets.map((w) => ({
@@ -45,8 +48,10 @@ export default function SelectWalletScreen() {
       } else {
         setFromWallet(item);
       }
+    } else if (isRecurring) {
+      recurringStore.setWallet(item);
     } else {
-      setSelectedWallet(item);
+      setSelectedWallet(item as import("@/stores/wallet-picker.store").PickerWallet);
     }
     router.back();
   };
@@ -80,7 +85,9 @@ export default function SelectWalletScreen() {
               ? isTo
                 ? toWallet?.id === item.id
                 : fromWallet?.id === item.id
-              : false;
+              : isRecurring
+                ? recurringStore.wallet?.id === item.id
+                : false;
             return (
               <Pressable
                 key={item.id}

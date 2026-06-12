@@ -5,7 +5,7 @@ export type CreateTransactionInput = {
   accountId: number;
   walletId: number;
   destinationWalletId?: number | null;
-  categoryId: number;
+  categoryId?: number | null;
   type: TransactionType;
   amount: number;
   note?: string | null;
@@ -27,7 +27,7 @@ export function createTransactionAtomic(input: CreateTransactionInput): number {
         input.accountId,
         input.walletId,
         input.destinationWalletId ?? null,
-        input.categoryId,
+        input.categoryId ?? null,
         input.type,
         input.amount,
         input.note ?? null,
@@ -107,7 +107,7 @@ export type UpdateTransactionInput = {
   id: number;
   walletId?: number;
   destinationWalletId?: number | null;
-  categoryId?: number;
+  categoryId?: number | null;
   amount?: number;
   note?: string | null;
   status?: TransactionStatus;

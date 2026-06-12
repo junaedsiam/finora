@@ -1,4 +1,4 @@
-import { View, Text, ScrollView, Pressable } from "react-native";
+import { View, Text, ScrollView, Pressable, Alert } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Feather from "@expo/vector-icons/Feather";
@@ -8,136 +8,18 @@ import { TransactionDateGroup } from "@/components/transaction/TransactionDateGr
 import { formatCurrency } from "@/utils/currency";
 import { useActiveCurrency } from "@/hooks/useActiveCurrency";
 import { useColors } from "@/constants/colors";
+import {
+  useRecurring,
+  useDeleteRecurring,
+  useUpdateRecurring,
+  useRecurringTransactions,
+} from "@/hooks/useRecurring";
+import { useCategories } from "@/hooks/useCategories";
+import { useWallets } from "@/hooks/useWallets";
+import dayjs from "dayjs";
 
-const MOCK_RECURRING: Record<
-  string,
-  {
-    name: string;
-    type: "income" | "expense";
-    amount: number;
-    frequency: "daily" | "weekly" | "monthly" | "yearly";
-    startDate: string;
-    nextDueDate: string;
-    walletName: string;
-    categoryName: string;
-    categoryIcon: React.ComponentProps<typeof Feather>["name"];
-    categoryColor: string;
-    isActive: boolean;
-    note: string | null;
-  }
-> = {
-  "1": {
-    name: "Monthly Salary",
-    type: "income",
-    amount: 5000,
-    frequency: "monthly",
-    startDate: "Jan 01, 2026",
-    nextDueDate: "May 01, 2026",
-    walletName: "Bank Account",
-    categoryName: "Salary",
-    categoryIcon: "briefcase",
-    categoryColor: "#22C55E",
-    isActive: true,
-    note: "Main job salary",
-  },
-  "2": {
-    name: "Internet Bill",
-    type: "expense",
-    amount: 20,
-    frequency: "monthly",
-    startDate: "Feb 01, 2026",
-    nextDueDate: "Apr 24, 2026",
-    walletName: "Bank Account",
-    categoryName: "Bills",
-    categoryIcon: "wifi",
-    categoryColor: "#5EEAD4",
-    isActive: true,
-    note: null,
-  },
-  "3": {
-    name: "Daily Groceries",
-    type: "expense",
-    amount: 5.49,
-    frequency: "daily",
-    startDate: "Mar 01, 2026",
-    nextDueDate: "Apr 20, 2026",
-    walletName: "Cash",
-    categoryName: "Food",
-    categoryIcon: "shopping-bag",
-    categoryColor: "#FDBA74",
-    isActive: true,
-    note: "Regular grocery shopping",
-  },
-  "4": {
-    name: "Gym Membership",
-    type: "expense",
-    amount: 45,
-    frequency: "monthly",
-    startDate: "Jan 15, 2026",
-    nextDueDate: "May 05, 2026",
-    walletName: "Credit Card",
-    categoryName: "Health",
-    categoryIcon: "heart",
-    categoryColor: "#F87171",
-    isActive: true,
-    note: null,
-  },
-  "5": {
-    name: "Freelance Payment",
-    type: "income",
-    amount: 1200,
-    frequency: "monthly",
-    startDate: "Mar 01, 2026",
-    nextDueDate: "May 15, 2026",
-    walletName: "Bank Account",
-    categoryName: "Freelance",
-    categoryIcon: "dollar-sign",
-    categoryColor: "#3B82F6",
-    isActive: false,
-    note: "Side project client",
-  },
-  "6": {
-    name: "Netflix Subscription",
-    type: "expense",
-    amount: 15.99,
-    frequency: "monthly",
-    startDate: "Jan 10, 2026",
-    nextDueDate: "Apr 28, 2026",
-    walletName: "Credit Card",
-    categoryName: "Entertainment",
-    categoryIcon: "tv",
-    categoryColor: "#E11D48",
-    isActive: true,
-    note: null,
-  },
-};
-
-const MOCK_HISTORY = [
-  {
-    id: 1,
-    title: "Monthly Salary",
-    wallet: "Bank Account",
-    amount: 5000,
-    type: "income" as const,
-    time: "09:00am",
-    date: { day: "01", dayName: "Wed", monthYear: "04.2026" },
-    icon: "briefcase" as const,
-    iconBg: "#22C55E",
-  },
-  {
-    id: 2,
-    title: "Monthly Salary",
-    wallet: "Bank Account",
-    amount: 5000,
-    type: "income" as const,
-    time: "09:00am",
-    date: { day: "01", dayName: "Sun", monthYear: "03.2026" },
-    icon: "briefcase" as const,
-    iconBg: "#22C55E",
-  },
-];
-
-function formatFrequency(freq: string): string {
+function formatFrequency(freq: string | undefined | null): string {
+  if (!freq) return "Unknown";
   return freq.charAt(0).toUpperCase() + freq.slice(1);
 }
 
@@ -145,27 +27,85 @@ export default function RecurringDetailScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { id } = useLocalSearchParams<{ id: string }>();
+  const numericId = parseInt(id ?? "0");
 
   const colors = useColors();
   const currency = useActiveCurrency();
-  const recurring = MOCK_RECURRING[id ?? "1"];
-  if (!recurring) return null;
 
-  const isIncome = recurring.type === "income";
+  const { data: recurring, isLoading } = useRecurring(numericId);
+  const { data: transactions = [] } = useRecurringTransactions(numericId);
+  const { data: categories = [] } = useCategories();
+  const { data: wallets = [] } = useWallets();
+  const { mutate: deleteRecurring } = useDeleteRecurring();
+  const { mutate: updateRecurring } = useUpdateRecurring();
+
+  if (isLoading) {
+    return (
+      <View className="flex-1 items-center justify-center bg-background">
+        <Text className="text-muted">Loading...</Text>
+      </View>
+    );
+  }
+
+  // Safety: if data is an array (shouldn't happen after query key fix), take first element
+  const recurringData = Array.isArray(recurring) ? recurring[0] : recurring;
+
+  if (!recurringData) {
+    return (
+      <View className="flex-1 items-center justify-center bg-background">
+        <Text className="text-muted">Recurring not found</Text>
+      </View>
+    );
+  }
+
+  const isIncome = recurringData.type === "income";
   const accentColor = isIncome ? colors.income : colors.expense;
 
-  const groupedHistory = MOCK_HISTORY.reduce(
-    (groups, txn) => {
-      const key = `${txn.date.day}-${txn.date.monthYear}`;
-      if (!groups[key]) groups[key] = { date: txn.date, items: [] };
-      groups[key].items.push(txn);
-      return groups;
-    },
-    {} as Record<
-      string,
-      { date: (typeof MOCK_HISTORY)[0]["date"]; items: typeof MOCK_HISTORY }
-    >
-  );
+  const category = categories.find((c) => c.id === recurringData.category_id);
+  const wallet = wallets.find((w) => w.id === recurringData.wallet_id);
+
+  const handleDelete = () => {
+    Alert.alert(
+      "Delete Recurring",
+      "Are you sure? This will also delete any pending transactions from this recurring.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: () => {
+            deleteRecurring(recurringData.id);
+            router.back();
+          },
+        },
+      ]
+    );
+  };
+
+  const handleTogglePause = () => {
+    updateRecurring({
+      id: recurringData.id,
+      isActive: !recurringData.is_active,
+    });
+  };
+
+  // Group transactions by date
+  const grouped = transactions.reduce((groups, txn) => {
+    const d = dayjs(txn.created_at);
+    const key = d.format("YYYY-MM-DD");
+    if (!groups[key]) {
+      groups[key] = {
+        date: {
+          day: d.format("DD"),
+          dayName: d.format("ddd"),
+          monthYear: d.format("MM.YYYY"),
+        },
+        items: [],
+      };
+    }
+    groups[key].items.push(txn);
+    return groups;
+  }, {} as Record<string, { date: { day: string; dayName: string; monthYear: string }; items: typeof transactions }>);
 
   return (
     <View className="flex-1 bg-background" style={{ paddingTop: insets.top }}>
@@ -192,7 +132,7 @@ export default function RecurringDetailScreen() {
             <Feather name="edit-2" size={24} color={colors.foreground} />
           </Pressable>
           <Pressable
-            onPress={() => {}}
+            onPress={handleDelete}
             hitSlop={8}
             className="active:opacity-70"
           >
@@ -205,16 +145,16 @@ export default function RecurringDetailScreen() {
         {/* Top info */}
         <View className="items-center mt-6">
           <IconCircle
-            icon={recurring.categoryIcon}
-            bgColor={recurring.categoryColor}
-            iconColor="#FFFFFF"
+            icon={category?.icon || (isIncome ? "arrow-up-right" : "arrow-down-right")}
+            bgColor={category?.color || (isIncome ? "#DCFCE7" : "#FEE2E2")}
+            iconColor={category?.color || accentColor}
             size={64}
           />
           <Text
             className="text-xl text-foreground mt-3"
             style={{ fontFamily: "Inter_700Bold" }}
           >
-            {recurring.name}
+            {recurringData.note || formatFrequency(recurringData.frequency)}
           </Text>
           <View className="flex-row items-center gap-2 mt-2">
             <View
@@ -225,10 +165,10 @@ export default function RecurringDetailScreen() {
                 className="text-sm uppercase"
                 style={{ fontFamily: "Inter_700Bold", color: accentColor }}
               >
-                {recurring.type}
+                {recurringData.type}
               </Text>
             </View>
-            {!recurring.isActive && (
+            {!recurringData.is_active && (
               <View className="rounded-full px-3 py-1 bg-surface">
                 <Text
                   className="text-sm uppercase"
@@ -243,7 +183,7 @@ export default function RecurringDetailScreen() {
             className="text-3xl mt-4"
             style={{ fontFamily: "Inter_700Bold", color: accentColor }}
           >
-            {isIncome ? "+" : "-"}{formatCurrency(recurring.amount, { currency })}
+            {isIncome ? "+" : "-"}{formatCurrency(recurringData.amount, { currency })}
           </Text>
         </View>
 
@@ -255,7 +195,7 @@ export default function RecurringDetailScreen() {
               className="text-lg text-foreground mt-1"
               style={{ fontFamily: "Inter_700Bold" }}
             >
-              {formatFrequency(recurring.frequency)}
+              {formatFrequency(recurringData.frequency)}
             </Text>
           </View>
           <View className="flex-1 rounded-2xl p-4 border border-border">
@@ -264,7 +204,7 @@ export default function RecurringDetailScreen() {
               className="text-lg text-foreground mt-1"
               style={{ fontFamily: "Inter_700Bold" }}
             >
-              {recurring.nextDueDate}
+              {recurringData.next_due_date}
             </Text>
           </View>
         </View>
@@ -274,8 +214,8 @@ export default function RecurringDetailScreen() {
             <Text className="text-sm text-muted">Category</Text>
             <View className="flex-row items-center gap-2 mt-1">
               <IconCircle
-                icon={recurring.categoryIcon}
-                bgColor={recurring.categoryColor}
+                icon={category?.icon || "help-circle"}
+                bgColor={category?.color || colors.muted}
                 iconColor="#FFFFFF"
                 size={24}
               />
@@ -283,7 +223,7 @@ export default function RecurringDetailScreen() {
                 className="text-lg text-foreground"
                 style={{ fontFamily: "Inter_700Bold" }}
               >
-                {recurring.categoryName}
+                {category?.name || "Unknown"}
               </Text>
             </View>
           </View>
@@ -293,7 +233,7 @@ export default function RecurringDetailScreen() {
               className="text-lg text-foreground mt-1"
               style={{ fontFamily: "Inter_700Bold" }}
             >
-              {recurring.walletName}
+              {wallet?.name || "Unknown"}
             </Text>
           </View>
         </View>
@@ -304,21 +244,38 @@ export default function RecurringDetailScreen() {
             className="text-lg text-foreground mt-1"
             style={{ fontFamily: "Inter_700Bold" }}
           >
-            {recurring.startDate}
+            {recurringData.start_date}
           </Text>
         </View>
 
-        {recurring.note && (
+        {recurringData.note && (
           <View className="rounded-2xl p-4 border border-border mt-3">
             <Text className="text-sm text-muted">Note</Text>
             <Text
               className="text-base text-foreground mt-1"
               style={{ fontFamily: "Inter_500Medium" }}
             >
-              {recurring.note}
+              {recurringData.note}
             </Text>
           </View>
         )}
+
+        {/* Pause/Resume button */}
+        <Pressable
+          onPress={handleTogglePause}
+          className="rounded-2xl p-4 border border-border mt-3 items-center"
+          style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
+        >
+          <Text
+            className="text-base"
+            style={{
+              fontFamily: "Inter_600SemiBold",
+              color: recurringData.is_active ? colors.expense : colors.income,
+            }}
+          >
+            {recurringData.is_active ? "Pause Recurring" : "Resume Recurring"}
+          </Text>
+        </Pressable>
 
         {/* Transaction history */}
         <View className="mt-6 pb-8">
@@ -328,7 +285,7 @@ export default function RecurringDetailScreen() {
           >
             Transaction History
           </Text>
-          {Object.values(groupedHistory).map((group) => (
+          {Object.values(grouped).map((group) => (
             <TransactionDateGroup
               key={`${group.date.day}-${group.date.monthYear}`}
               day={group.date.day}
@@ -338,18 +295,18 @@ export default function RecurringDetailScreen() {
               {group.items.map((txn) => (
                 <TransactionItem
                   key={txn.id}
-                  title={txn.title}
-                  subtitle={txn.wallet}
+                  title={txn.note || formatFrequency(recurringData.frequency)}
+                  subtitle={wallet?.name || ""}
                   amount={txn.amount}
-                  type={txn.type}
-                  time={txn.time}
-                  icon={txn.icon}
-                  iconBg={txn.iconBg}
+                  type={txn.type === "income" ? "income" : "expense"}
+                  time={dayjs(txn.created_at).format("hh:mm a")}
+                  icon={category?.icon || "help-circle"}
+                  iconBg={category?.color || colors.muted}
                 />
               ))}
             </TransactionDateGroup>
           ))}
-          {MOCK_HISTORY.length === 0 && (
+          {transactions.length === 0 && (
             <View className="items-center py-8">
               <Feather name="inbox" size={40} color={colors.muted} />
               <Text className="text-base text-muted mt-2">

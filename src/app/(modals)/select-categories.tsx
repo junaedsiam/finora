@@ -4,28 +4,22 @@ import { useRouter, useLocalSearchParams } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Feather from "@expo/vector-icons/Feather";
 import { useColors } from "@/constants/colors";
-import {
-  useTransactionFormStore,
-} from "@/stores/transaction-form.store";
-import { useRecurringFormStore } from "@/stores/recurring-form.store";
+import { useBudgetFormStore } from "@/stores/budget-form.store";
 import { useCategoriesForPicker } from "@/hooks/useCategories";
 import type { CategoryType } from "@/types/database";
 
-export default function SelectCategoryScreen() {
+export default function SelectCategoriesScreen() {
   const router = useRouter();
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const params = useLocalSearchParams<{ type?: string; context?: string }>();
-  const txStore = useTransactionFormStore();
-  const recurringStore = useRecurringFormStore();
-
-  const isRecurring = params.context === "recurring";
-  const category = isRecurring ? recurringStore.category : txStore.category;
-  const setCategory = isRecurring ? recurringStore.setCategory : txStore.setCategory;
+  const params = useLocalSearchParams<{ type?: string }>();
+  const budgetStore = useBudgetFormStore();
 
   const categoryType = (params.type ?? "expense") as CategoryType;
   const { data: categoriesWithSubs = [] } = useCategoriesForPicker(categoryType);
   const [search, setSearch] = useState("");
+
+  const selectedIds = new Set(budgetStore.categories.map((c) => c.id));
 
   const filtered = categoriesWithSubs
     .map((parent) => {
@@ -40,21 +34,38 @@ export default function SelectCategoryScreen() {
     })
     .filter(Boolean) as typeof categoriesWithSubs;
 
+  const toggle = (id: number, name: string, icon: string, color: string) => {
+    const idStr = id.toString();
+    if (selectedIds.has(idStr)) {
+      budgetStore.removeCategory(idStr);
+    } else {
+      budgetStore.addCategory({ id: idStr, name, icon, color });
+    }
+  };
+
   return (
     <View className="flex-1 bg-background" style={{ paddingTop: insets.top }}>
       {/* Header */}
       <View className="flex-row items-center px-5 pt-2 pb-4 gap-3">
-        <Pressable
-          onPress={() => router.back()}
-          hitSlop={8}
-          className="active:opacity-70"
-        >
+        <Pressable onPress={() => router.back()} hitSlop={8} className="active:opacity-70">
           <Feather name="arrow-left" size={24} color={colors.foreground} />
         </Pressable>
         <Text className="flex-1 text-xl font-sans-bold text-foreground">
-          Select Category
+          Select Categories
         </Text>
+        <Pressable onPress={() => router.back()} hitSlop={8} className="active:opacity-70">
+          <Text className="text-primary font-sans-semibold">Done</Text>
+        </Pressable>
       </View>
+
+      {/* Selected count */}
+      {budgetStore.categories.length > 0 && (
+        <View className="px-5 pb-2">
+          <Text className="text-sm text-muted">
+            {budgetStore.categories.length} selected
+          </Text>
+        </View>
+      )}
 
       {/* Search */}
       <View className="px-5 pb-3">
@@ -81,26 +92,20 @@ export default function SelectCategoryScreen() {
         {filtered.length === 0 ? (
           <View className="items-center py-12">
             <Feather name={search ? "search" : "folder"} size={40} color={colors.muted} />
-            <Text className="text-muted mt-3">{search ? "No results found" : "No categories yet, add one in Settings"}</Text>
+            <Text className="text-muted mt-3">
+              {search ? "No results found" : "No categories yet, add one in Settings"}
+            </Text>
           </View>
         ) : (
           filtered.map((parent) => (
             <View key={parent.id}>
               {/* Parent Category */}
               <Pressable
-                onPress={() => {
-                  setCategory({
-                    id: parent.id.toString(),
-                    name: parent.name,
-                    icon: parent.icon,
-                    color: parent.color,
-                  });
-                  router.back();
-                }}
+                onPress={() =>
+                  toggle(parent.id, parent.name, parent.icon, parent.color)
+                }
                 className="flex-row items-center py-4"
-                style={({ pressed }) => ({
-                  opacity: pressed ? 0.7 : 1,
-                })}
+                style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
               >
                 <View
                   className="h-12 w-12 items-center justify-center rounded-full"
@@ -122,11 +127,15 @@ export default function SelectCategoryScreen() {
                 <View
                   className="h-6 w-6 items-center justify-center rounded-full border-2"
                   style={{
-                    borderColor: category?.id === parent.id.toString() ? colors.primary : colors.border,
-                    backgroundColor: category?.id === parent.id.toString() ? colors.primary : "transparent",
+                    borderColor: selectedIds.has(parent.id.toString())
+                      ? colors.primary
+                      : colors.border,
+                    backgroundColor: selectedIds.has(parent.id.toString())
+                      ? colors.primary
+                      : "transparent",
                   }}
                 >
-                  {category?.id === parent.id.toString() && (
+                  {selectedIds.has(parent.id.toString()) && (
                     <View className="h-2.5 w-2.5 rounded-full bg-white" />
                   )}
                 </View>
@@ -136,23 +145,20 @@ export default function SelectCategoryScreen() {
               {parent.subCategories.length > 0 && (
                 <View className="pl-6 pb-2">
                   {parent.subCategories.map((sub) => {
-                    const isSelected = category?.id === sub.id.toString();
+                    const isSelected = selectedIds.has(sub.id.toString());
                     return (
                       <Pressable
                         key={sub.id}
-                        onPress={() => {
-                          setCategory({
-                            id: sub.id.toString(),
-                            name: `${parent.name}/${sub.name}`,
-                            icon: sub.icon || parent.icon,
-                            color: sub.color || parent.color,
-                          });
-                          router.back();
-                        }}
+                        onPress={() =>
+                          toggle(
+                            sub.id,
+                            `${parent.name}/${sub.name}`,
+                            sub.icon || parent.icon,
+                            sub.color || parent.color
+                          )
+                        }
                         className="flex-row items-center py-3"
-                        style={({ pressed }) => ({
-                          opacity: pressed ? 0.7 : 1,
-                        })}
+                        style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
                       >
                         <View
                           className="h-2 w-2 rounded-full mr-3"

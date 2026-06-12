@@ -1,4 +1,4 @@
-import { View, Text } from "react-native";
+import { View, Text, Pressable } from "react-native";
 import { ProgressBar } from "@/components/ui/ProgressBar";
 import { formatCurrency } from "@/utils/currency";
 
@@ -8,6 +8,7 @@ type BudgetProgressCardProps = {
   total: number;
   color?: string;
   currency?: string;
+  onPress?: () => void;
 };
 
 export function BudgetProgressCard({
@@ -16,10 +17,11 @@ export function BudgetProgressCard({
   total,
   color = "#3538F8",
   currency = "USD",
+  onPress,
 }: BudgetProgressCardProps) {
-  const percentage = Math.round((spent / total) * 100);
+  const percentage = total > 0 ? Math.round((spent / total) * 100) : 0;
 
-  return (
+  const card = (
     <View className="rounded-2xl p-4 border border-border bg-background">
       <Text className="text-base font-sans-bold text-foreground mb-3">
         {name}
@@ -35,4 +37,14 @@ export function BudgetProgressCard({
       </View>
     </View>
   );
+
+  if (onPress) {
+    return (
+      <Pressable onPress={onPress} style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}>
+        {card}
+      </Pressable>
+    );
+  }
+
+  return card;
 }

@@ -238,6 +238,22 @@ CREATE TRIGGER IF NOT EXISTS tr_transactions_updated AFTER UPDATE ON transaction
 BEGIN UPDATE transactions SET updated_at = datetime('now') WHERE id = NEW.id; END;
 `,
   },
+  {
+    version: 6,
+    sql: `-- Add note, start_date, and destination_wallet_id to recurring
+
+ALTER TABLE recurring ADD COLUMN note TEXT;
+ALTER TABLE recurring ADD COLUMN start_date TEXT NOT NULL DEFAULT (datetime('now'));
+ALTER TABLE recurring ADD COLUMN destination_wallet_id INTEGER REFERENCES wallets(id) ON DELETE SET NULL;
+`,
+  },
+  {
+    version: 7,
+    sql: `-- Add end_date to budgets for explicit date ranges
+
+ALTER TABLE budgets ADD COLUMN end_date TEXT;
+`,
+  },
 ];
 
 function splitSql(sql: string): string[] {

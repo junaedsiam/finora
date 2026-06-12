@@ -74,4 +74,17 @@ export function seedDatabase(): void {
     );
   }
 
+  // Create sample recurring entries
+  const today = new Date().toISOString().split("T")[0];
+  db.runSync(
+    `INSERT INTO recurring (account_id, wallet_id, category_id, type, amount, frequency, next_due_date, start_date, note, is_active)
+     VALUES (?, ?, ?, 'expense', ?, 'daily', ?, ?, 'Daily Coffee', 1)`,
+    [accountId, 1, 1, 5.0, today, today]
+  );
+  db.runSync(
+    `INSERT INTO recurring (account_id, wallet_id, category_id, type, amount, frequency, next_due_date, start_date, note, is_active)
+     VALUES (?, ?, ?, 'income', ?, 'monthly', ?, ?, 'Monthly Salary', 1)`,
+    [accountId, 2, 11, 5000.0, today, today]
+  );
+
 }

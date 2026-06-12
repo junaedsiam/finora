@@ -57,8 +57,9 @@ export type BudgetRow = {
   account_id: number;
   name: string;
   amount: number;
-  period: "weekly" | "monthly" | "yearly";
+  period: "weekly" | "monthly" | "yearly" | "custom";
   start_date: string;
+  end_date: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -87,10 +88,13 @@ export type RecurringRow = {
   account_id: number;
   wallet_id: number;
   category_id: number;
+  destination_wallet_id: number | null;
   type: TransactionType;
   amount: number;
   frequency: "daily" | "weekly" | "monthly" | "yearly";
   next_due_date: string;
+  start_date: string;
+  note: string | null;
   is_active: boolean;
   created_at: string;
   updated_at: string;

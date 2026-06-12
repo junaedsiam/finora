@@ -76,7 +76,7 @@ export function TransactionForm({ editId }: TransactionFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const isTransfer = activeTab === 2;
-  const currentType = activeTab === 0 ? "income" : "expense";
+  const currentType = activeTab === 0 ? "income" : activeTab === 1 ? "expense" : "transfer";
 
   // Populate form when editing and data loads
   useEffect(() => {
@@ -99,15 +99,17 @@ export function TransactionForm({ editId }: TransactionFormProps) {
     else if (existingTx.type === "expense") setActiveTab(1);
     else setActiveTab(2);
 
-    // Set category in store
-    const cat = categories.find((c) => c.id === existingTx.category_id);
-    if (cat) {
-      setCategory({
-        id: cat.id.toString(),
-        name: cat.name,
-        icon: cat.icon,
-        color: cat.color,
-      });
+    // Set category in store (only for income/expense)
+    if (existingTx.type !== "transfer") {
+      const cat = categories.find((c) => c.id === existingTx.category_id);
+      if (cat) {
+        setCategory({
+          id: cat.id.toString(),
+          name: cat.name,
+          icon: cat.icon,
+          color: cat.color,
+        });
+      }
     }
 
     // Set wallets in store
@@ -160,7 +162,7 @@ export function TransactionForm({ editId }: TransactionFormProps) {
       Alert.alert("Error", "Please enter a valid amount");
       return;
     }
-    if (!category) {
+    if (!isTransfer && !category) {
       Alert.alert("Error", "Please select a category");
       return;
     }
@@ -179,7 +181,7 @@ export function TransactionForm({ editId }: TransactionFormProps) {
 
     setIsSubmitting(true);
     try {
-      const categoryId = parseInt(category.id);
+      const categoryId = isTransfer ? null : category ? parseInt(category.id) : null;
 
       if (isEditing && existingTx) {
         // UPDATE
@@ -313,18 +315,20 @@ export function TransactionForm({ editId }: TransactionFormProps) {
             flex={false}
           />
 
-          <DropdownField
-            icon="align-left"
-            label="Category"
-            value={category?.name}
-            onPress={() =>
-              router.push({
-                pathname: "/(modals)/select-category",
-                params: { type: currentType },
-              })
-            }
-            flex={false}
-          />
+          {!isTransfer && (
+            <DropdownField
+              icon="align-left"
+              label="Category"
+              value={category?.name}
+              onPress={() =>
+                router.push({
+                  pathname: "/(modals)/select-category",
+                  params: { type: currentType },
+                })
+              }
+              flex={false}
+            />
+          )}
 
           <View className="flex-row gap-3">
             {activeTab !== 0 && (

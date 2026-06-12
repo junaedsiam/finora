@@ -23,7 +23,7 @@ export default function HomeScreen() {
       <BalanceCard />
       <WalletSection />
       <RecentTransactions />
-      <UpcomingCosts currency={currency} />
+      <UpcomingCosts />
       <BudgetSection />
       <DebtSection />
     </ScrollView>

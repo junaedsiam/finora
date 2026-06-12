@@ -38,6 +38,13 @@ export default function ModalLayout() {
           contentStyle: { backgroundColor: colors.background },
         }}
       />
+      <Stack.Screen
+        name="select-categories"
+        options={{
+          animation: "slide_from_right",
+          contentStyle: { backgroundColor: colors.background },
+        }}
+      />
     </Stack>
   );
 }

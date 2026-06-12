@@ -18,7 +18,7 @@ export async function createTransaction(params: {
   accountId: number;
   walletId: number;
   destinationWalletId?: number | null;
-  categoryId: number;
+  categoryId?: number | null;
   type: TransactionType;
   amount: number;
   note?: string | null;
@@ -34,7 +34,7 @@ export async function createTransaction(params: {
       params.accountId,
       params.walletId,
       params.destinationWalletId ?? null,
-      params.categoryId,
+      params.categoryId ?? null,
       params.type,
       params.amount,
       params.note ?? null,

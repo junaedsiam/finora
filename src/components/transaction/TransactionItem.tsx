@@ -29,8 +29,9 @@ export function TransactionItem({
 }: TransactionItemProps) {
   const colors = useColors();
   const isIncome = type === "income";
-  const amountColor = isIncome ? colors.income : colors.expense;
-  const prefix = isIncome ? "+" : "-";
+  const isTransfer = type === "transfer";
+  const amountColor = isIncome ? colors.income : isTransfer ? colors.foreground : colors.expense;
+  const prefix = isTransfer ? "" : isIncome ? "+" : "-";
 
   return (
     <Pressable

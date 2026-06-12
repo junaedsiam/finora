@@ -33,7 +33,7 @@ export function useCreateTransaction() {
     mutationFn: async (params: {
       walletId: number;
       destinationWalletId?: number | null;
-      categoryId: number;
+      categoryId?: number | null;
       type: TransactionType;
       amount: number;
       note?: string | null;
@@ -45,6 +45,7 @@ export function useCreateTransaction() {
       qc.invalidateQueries({ queryKey: ["transactions", activeAccountId] });
       qc.invalidateQueries({ queryKey: ["wallets", activeAccountId] });
       qc.invalidateQueries({ queryKey: ["balance", activeAccountId] });
+      qc.invalidateQueries({ queryKey: ["budgets", activeAccountId] });
     },
   });
 }
@@ -57,7 +58,7 @@ export function useUpdateTransaction() {
       id: number;
       walletId?: number;
       destinationWalletId?: number | null;
-      categoryId?: number;
+      categoryId?: number | null;
       amount?: number;
       note?: string | null;
       status?: TransactionStatus;
@@ -68,6 +69,7 @@ export function useUpdateTransaction() {
       qc.invalidateQueries({ queryKey: ["transactions", activeAccountId] });
       qc.invalidateQueries({ queryKey: ["wallets", activeAccountId] });
       qc.invalidateQueries({ queryKey: ["balance", activeAccountId] });
+      qc.invalidateQueries({ queryKey: ["budgets", activeAccountId] });
     },
   });
 }
@@ -83,6 +85,7 @@ export function useDeleteTransaction() {
       qc.invalidateQueries({ queryKey: ["transactions", activeAccountId] });
       qc.invalidateQueries({ queryKey: ["wallets", activeAccountId] });
       qc.invalidateQueries({ queryKey: ["balance", activeAccountId] });
+      qc.invalidateQueries({ queryKey: ["budgets", activeAccountId] });
     },
   });
 }

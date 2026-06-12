@@ -73,7 +73,7 @@ export default function SettingsScreen() {
           <Divider />
           <SettingsItem icon="grid" label="Category" onPress={() => router.push("/settings/categories")} />
           <Divider />
-          <SettingsItem icon="target" label="Budget" />
+          <SettingsItem icon="target" label="Budget" onPress={() => router.push("/budget")} />
           <Divider />
           <SettingsItem icon="trending-down" label="Debt" onPress={() => router.push("/debt")} />
           <Divider />
